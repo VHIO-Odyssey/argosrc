@@ -1,7 +1,7 @@
 Package: argosrc
 Type: Package
-Title: Verifications Repository for VHIO REDCap Projects
-Version: 0.1.0
+Title: Automatic Review and Governance for Oncology Studies in REDCap
+Version: 0.0.9000
 Authors@R: 
     person("Eduardo", "García-Galea", , "eduardogarcia@vhio.net", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-4699-0786"))
@@ -10,3 +10,5 @@ Description: More about what it does (maybe more than one line).
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
+Depends: 
+    R (>= 3.5)

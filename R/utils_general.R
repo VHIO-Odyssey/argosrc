@@ -105,6 +105,25 @@ determine_verification_match <- function(verification, metadata) {
 }
 
 
+#' Seek Issues in REDCap Data Based on Verifications
+#'
+#' This function processes REDCap data to detect applicable verification rules,
+#' optionally runs these verifications on the data, and returns the results.
+#'
+#' @param rc_data A data frame containing REDCap data with associated metadata.
+#' @param run_verifications Logical, whether to execute the detected verifications on the data (default `TRUE`).
+#' @param return_no_issues_verif Logical, if `TRUE`, return all verification results including those with no issues; otherwise, only return those with detected issues (default `FALSE`).
+#'
+#' @return A tibble of verifications applied to the data:
+#'   - If `run_verifications = TRUE`, a tibble with verification function names, arguments, descriptions, issues found, and count of issues.
+#'   - If `run_verifications = FALSE`, a tibble of detected verification rules that match the data.
+#'
+#' @details
+#' The function identifies applicable verifications based on the data's metadata,
+#' matches verification arguments, and can run the verifications to detect data problems.
+#' Verifications that do not apply or fail to match are excluded.
+#'
+#' @export
 argos_seek <- function(
     rc_data,
     run_verifications = TRUE,

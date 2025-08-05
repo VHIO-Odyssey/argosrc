@@ -120,7 +120,8 @@ verify_completeness_form <- function(
     rc_data,
     current_form_name,
     conditions_list,
-    user_na_is_data
+    user_na_is_data,
+    missing_data_codes
 ) {
 
   id_var <- attr(rc_data, "id_var")
@@ -191,6 +192,10 @@ verify_completeness_form <- function(
           missing_type = dplyr::case_when(
             labelled::is_regular_na(!!current_variable) ~ "Regular",
             labelled::is_user_na(!!current_variable) ~ "User defined",
+          ),
+          missing_value = dplyr::case_when(
+            labelled::is_regular_na(!!current_variable) ~ NA_character_,
+            labelled::is_user_na(!!current_variable) ~ as.character(!!current_variable)
           )
         ) |>
         dplyr::select(
@@ -202,18 +207,30 @@ verify_completeness_form <- function(
             "redcap_instance_number"
           )),
           "variable",
-          missing_type
+          "missing_type",
+          "missing_value"
         )
 
 
     }
   ) |>
-    purrr::list_rbind()
+    purrr::list_rbind() |>
+    dplyr::left_join(
+      missing_data_codes,
+      by = c("missing_value" = "raw_value")
+    ) |>
+    dplyr::mutate(
+      missing_value = label
+    ) |>
+    dplyr::select(-"label")
 
 }
 
 
-argos_completeness <- function(rc_data) {
+argos_check_completeness <- function(
+    rc_data,
+    forms = "All",
+    user_na_is_data = TRUE) {
 
   metadata <- attr(rc_data, "metadata")
   missing_data_codes <- attr(rc_data, "missing")
@@ -221,11 +238,18 @@ argos_completeness <- function(rc_data) {
       metadata, missing_data_codes
     )
 
-  forms <- attr(rc_data, "forms")$instrument_name
+  if (any(forms == "All")) forms <- attr(rc_data, "forms")$instrument_name
+
   purrr::map(
     forms,
-    ~ verify_completeness_form(rc_data, ., conditions_list, TRUE),
-    .progress = TRUE
+    ~ verify_completeness_form(
+      rc_data,
+      .,
+      conditions_list,
+      user_na_is_data,
+      missing_data_codes
+    ),
+    .progress = "Argos is searching \U1F415"
   ) |>
     purrr::list_rbind()
 

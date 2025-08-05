@@ -170,8 +170,10 @@ verify_completeness_form <- function(
 
       if (is.null(current_condition_raw)) {
         current_condition <- TRUE
+        current_condition_label <- "Allways"
       } else {
         current_condition <- str2lang(current_condition_raw)
+        current_condition_label <- current_condition_raw
       }
 
       if (user_na_is_data) {
@@ -189,6 +191,7 @@ verify_completeness_form <- function(
         dplyr::filter(na_fn(!!current_variable)) |>
         dplyr::mutate(
           variable = x,
+          condition = current_condition_label,
           missing_type = dplyr::case_when(
             labelled::is_regular_na(!!current_variable) ~ "Regular",
             labelled::is_user_na(!!current_variable) ~ "User defined",
@@ -207,6 +210,7 @@ verify_completeness_form <- function(
             "redcap_instance_number"
           )),
           "variable",
+          "condition",
           "missing_type",
           "missing_value"
         )
@@ -278,6 +282,8 @@ argos_check_completeness <- function(
     ),
     .progress = "Argos is searching \U1F415"
   ) |>
-    purrr::list_rbind()
+    purrr::list_rbind() |>
+    dplyr::relocate(.data[["condition"]], .after = "variable") |>
+    dplyr::arrange(.data[[attr(rc_data, "id_var")]])
 
 }

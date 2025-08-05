@@ -50,8 +50,8 @@ get_reference_metadata <- function(involved_variables, metadata_origin) {
 
 # dataset ----
 
-verifications_master <-
-  readr::read_csv2(here::here("data-raw", "verifications_master.csv")) |>
+plausability_verifications_master <-
+  readr::read_csv2(here::here("data-raw", "plausability_verifications_master.csv")) |>
   dplyr::mutate(
     complexity = factor(complexity, levels = c("monoform", "multiform")),
     involved_variables = purrr::map(involved_variables, format_involved_vars) |>
@@ -61,4 +61,4 @@ verifications_master <-
   ) |>
     dplyr::select(-metadata_origin)
 
-usethis::use_data(verifications_master, overwrite = TRUE)
+usethis::use_data(plausability_verifications_master, overwrite = TRUE)

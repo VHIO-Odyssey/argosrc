@@ -1,3 +1,5 @@
+# Plausability related general functions
+
 
 filter_issues <- function(verified_data, issue) {
 
@@ -14,6 +16,25 @@ filter_issues <- function(verified_data, issue) {
         "redcap_instance_number"
       )),
       issue
+    )
+
+}
+
+
+verify_flipped_dates <- function(
+    to_verify_data,
+    start_date,
+    end_date
+) {
+
+  to_verify_data |>
+    odytools::ody_rc_format() |>
+    dplyr::mutate(
+      # If there is no start or end date, it is considered correct. This check
+      # only focuses on ensuring that start <= end_date when both dates exist.
+      .ok = .data[[start_date]] <= .data[[end_date]] |
+        is.na(.data[[start_date]]) |
+        is.na(.data[[end_date]])
     )
 
 }
@@ -95,9 +116,9 @@ determine_verification_match <- function(verification, metadata) {
     verification_arg = list(
       verification_arg[, -3] |>
         tidyr::pivot_wider(
-        names_from = verification_argument,
-        values_from = detected_field
-      )
+          names_from = verification_argument,
+          values_from = detected_field
+        )
     )
   )
 
@@ -129,12 +150,15 @@ argos_seek <- function(
     run_verifications = TRUE,
     return_no_issues_verif = FALSE
 
-  ) {
+) {
 
   rc_data_expr <- rlang::enexpr(rc_data)
 
   detected_verifications <-
-    purrr::map(1:nrow(verifications_master), ~ verifications_master[., ]) |>
+    purrr::map(
+      1:nrow(plausability_verifications_master),
+      ~ plausability_verifications_master[., ]
+    ) |>
     purrr::map(determine_verification_match, attr(rc_data, "metadata")) |>
     purrr::list_rbind() |>
     dplyr::filter(verification_match) |>
@@ -177,7 +201,3 @@ argos_seek <- function(
   }
 
 }
-
-
-
-

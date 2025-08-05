@@ -1,3 +1,0 @@
-﻿verification;version;description;complexity;involved_variables;metadata_origin
-adverse_events_1;1;The adverse event status Yes/No is provided.;monoform;ae_stat;SERONCO1
-adverse_events_2;1;The adverse avent start date is before or equal the end date.;monoform;ae_stat | ae_startdate, ae_start_date | ae_enddate, ae_end_date ;SERONCO1

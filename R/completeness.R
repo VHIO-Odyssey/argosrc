@@ -1,6 +1,7 @@
+# Completeness related functions
+
 # Helper function to check inside get_conditions_from_metadata whether the
-# the data_frame can be actually filtered by the elements of the
-# conditions_list.
+#  data_frame can be actually filtered by the elements of the conditions_list.
 filter_condition <- function(data_frame, condition) {
 
   data_frame |>
@@ -48,6 +49,7 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
           # the missing data codes.
           stringr::str_replace_all(" AND ", " and ") |>
           stringr::str_replace_all( " OR ", " or ") |>
+          stringr::str_replace_all("\\n", " ") |>
           stringr::str_replace_all(missing_value, "user_na") |>
           # Checkbox variables to especific check box column
           stringr::str_replace_all( "\\((\\d+)\\)", "___\\1") |>
@@ -111,5 +113,120 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
   # }
   #
   # conditions_list[ok_index]
+
+}
+
+verify_completeness_form <- function(
+    rc_data,
+    current_form_name,
+    conditions_list,
+    user_na_is_data
+) {
+
+  id_var <- attr(rc_data, "id_var")
+
+  current_form <- odytools::ody_rc_select_form(
+    rc_data, !!current_form_name
+  )
+
+  if (nrow(current_form) == 0) {
+
+    empty_result <-
+      tibble::tibble(
+      "{id_var}" := NA_character_,
+      redcap_event_name = NA_character_,
+      redcap_form_name = NA_character_,
+      redcap_instance_type = NA_character_,
+      redcap_instance_number = NA_character_,
+      variable = NA_character_,
+      missing_type = NA_character_
+    ) |>
+      dplyr::filter(!is.na(variable))
+
+    return(empty_result)
+
+  }
+
+  current_variables_name <-
+  current_form |>
+    dplyr::select(
+      -all_of(id_var),
+      -"redcap_event_name",
+      -"redcap_form_name",
+      -"redcap_instance_type",
+      -"redcap_instance_number",
+      -stringr::str_c(current_form_name, "_complete")
+    ) |>
+    names()
+
+
+  purrr::map(
+    current_variables_name,
+    function(x) {
+
+      current_variable <- str2lang(x)
+      current_condition_raw <- conditions_list[[current_variable]]
+
+      if (is.null(current_condition_raw)) {
+        current_condition <- TRUE
+      } else {
+        current_condition <- str2lang(current_condition_raw)
+      }
+
+      if (user_na_is_data) {
+        na_fn <- labelled::is_regular_na
+      } else {
+        na_fn <- is.na
+      }
+
+
+      current_form |>
+        # Safe version. If the filter fails (mainly because the variables
+        # declared in current_condition do not belong to the current form) it
+        # returns the original unfiltered form.
+        safe_filter(!!current_condition) |>
+        dplyr::filter(na_fn(!!current_variable)) |>
+        dplyr::mutate(
+          variable = x,
+          missing_type = dplyr::case_when(
+            labelled::is_regular_na(!!current_variable) ~ "Regular",
+            labelled::is_user_na(!!current_variable) ~ "User defined",
+          )
+        ) |>
+        dplyr::select(
+          tidyselect::any_of(c(
+            id_var,
+            "redcap_event_name",
+            "redcap_form_name",
+            "redcap_instance_type",
+            "redcap_instance_number"
+          )),
+          "variable",
+          missing_type
+        )
+
+
+    }
+  ) |>
+    purrr::list_rbind()
+
+}
+
+
+argos_completeness <- function(rc_data) {
+
+  metadata <- attr(rc_data, "metadata")
+  missing_data_codes <- attr(rc_data, "missing")
+  conditions_list <- get_conditions_from_metadata(
+      metadata, missing_data_codes
+    )
+
+  forms <- attr(rc_data, "forms")$instrument_name
+  purrr::map(
+    forms,
+    ~ verify_completeness_form(rc_data, ., conditions_list, TRUE),
+    .progress = TRUE
+  ) |>
+    purrr::list_rbind()
 
 }

@@ -227,16 +227,43 @@ verify_completeness_form <- function(
 }
 
 
+#' Check completeness of REDCap data forms
+#'
+#' This function verifies completeness of specified forms in REDCap data,
+#' considering user-defined missing values and branching logic conditions.
+#'
+#' @param rc_data A REDCap data frame with associated attributes
+#'   `"metadata"`, `"missing"`, and `"forms"`.
+#' @param forms Character vector of form names to check or `"All"` (the default) to check all forms.
+#' @param user_na_is_data Logical, if TRUE treats user-defined missing values as non-missing values.
+#' @param extra_conditions_list Optional list of additional conditions to consider.
+#'
+#' @return A tibble summarizing missing data per variable and form.
+#' @export
 argos_check_completeness <- function(
     rc_data,
     forms = "All",
-    user_na_is_data = TRUE) {
+    user_na_is_data = TRUE,
+    extra_conditions_list = NULL) {
 
   metadata <- attr(rc_data, "metadata")
   missing_data_codes <- attr(rc_data, "missing")
   conditions_list <- get_conditions_from_metadata(
-      metadata, missing_data_codes
-    )
+    metadata, missing_data_codes
+  )
+
+  if (!is.null(extra_conditions_list)) {
+
+    conditions_list <-
+      # If any variable in extra_conditions_list is already defined by
+      # the default branching logic, it is removed so the new will conditions
+      #  apply
+      conditions_list[
+        !names(conditions_list) %in% names(extra_conditions_list)
+      ] |>
+      c(extra_conditions_list)
+
+  }
 
   if (any(forms == "All")) forms <- attr(rc_data, "forms")$instrument_name
 

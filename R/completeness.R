@@ -287,3 +287,127 @@ argos_check_completeness <- function(
     dplyr::arrange(.data[[attr(rc_data, "id_var")]])
 
 }
+
+
+#' Count form completions in REDCap data
+#'
+#' This function counts the number of records per form and event in REDCap data.
+#' It returns a list of data frames, one per event, with counts of forms completed by record.
+#' Optionally, the result can be saved as an Excel file with one sheet per event.
+#'
+#' @param rc_data A REDCap data frame imported with  `odytools::ody_rc_import()`
+#' @param save_path Optional path to save the output Excel file; if NULL, no file is saved.
+#'
+#' @return A list of tibbles, each containing counts of completed forms per record for a specific event.
+#' @export
+argos_count_forms <- function(rc_data, save_path = NULL) {
+
+  id_var <- attr(rc_data, "id_var")
+  subjects <- attr(rc_data, "subjects")
+  subjects_tbl <- tibble::tibble("{id_var}" := subjects)
+  forms <- attr(rc_data, "forms")$instrument_name
+  events <- attr(rc_data, "events")$unique_event_name
+  forms_events_mapping <- attr(rc_data, "forms_events_mapping")
+
+  form_count_raw <- purrr::map(
+    forms,
+    function(form) {
+      form_data <- odytools::ody_rc_select_form(rc_data, !!form)
+
+      if (nrow(form_data) == 0) {
+
+        forms_count <- tibble::tibble(
+          "{id_var}" := NA_character_,
+          redcap_event_name = NA_character_,
+          redcap_form_name = NA_character_,
+          n = NA_integer_
+        ) |>
+          dplyr::filter(!is.na(.data[[id_var]]))
+
+      } else {
+
+      forms_count <-
+        form_data |>
+        dplyr::count(.data[[id_var]], .data[["redcap_event_name"]]) |>
+        dplyr::mutate(
+          redcap_form_name = form,
+          .before = n
+        )
+
+      }
+
+      expected_events <-
+        forms_events_mapping |>
+        dplyr::filter(.data[["form"]] == .env$form) |>
+        dplyr::pull("unique_event_name")
+
+      expected_structure <-
+        tidyr::expand_grid(
+          "{id_var}" := subjects,
+          redcap_event_name = expected_events,
+          redcap_form_name = form
+        )
+
+      dplyr::full_join(
+        forms_count, expected_structure,
+        by = c(id_var, "redcap_event_name", "redcap_form_name")
+      ) |>
+        dplyr::mutate(
+          n = tidyr::replace_na(n, 0)
+        )
+
+    }
+  ) |>
+    purrr::list_rbind() |>
+    dplyr::mutate(
+      redcap_event_name = factor(
+        redcap_event_name, levels = events
+      ),
+      redcap_form_name = factor(
+        redcap_form_name, levels = forms
+      )
+    ) |>
+    dplyr::arrange(redcap_event_name)
+
+  form_count_list <-
+    purrr::map(
+      events,
+      ~ form_count_raw |>
+        dplyr::filter(
+          redcap_event_name == .env$.
+        ) |>
+        tidyr::pivot_wider(
+          names_from = "redcap_form_name",
+          values_from = "n",
+          values_fill = 0
+        ) |>
+        dplyr::full_join(subjects_tbl) |>
+        dplyr::arrange(.data[[id_var]]) |>
+        tidyr::fill("redcap_event_name", .direction = "downup") |>
+        dplyr::mutate(
+          dplyr::across(tidyselect::where(is.integer), ~ tidyr::replace_na(., 0))
+        ) |>
+        dplyr::select(-"redcap_event_name")
+    ) |>
+    purrr::set_names(events)
+
+
+  if (is.null(save_path)) return(form_count_list)
+
+
+  wb <- openxlsx::createWorkbook()
+  purrr::walk2(
+    form_count_list,
+    events,
+    function(.x, .y) {
+      openxlsx::addWorksheet(wb, .y)
+      openxlsx::writeData(wb, sheet = .y, .x)
+    }
+  )
+  openxlsx::saveWorkbook(
+    wb, here::here(save_path, "form_count_list.xlsx"),
+    overwrite = TRUE
+  )
+
+
+}

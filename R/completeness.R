@@ -371,6 +371,26 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
 
   if (is.null(save_path)) return(form_count_raw)
 
+
+  forms_dict <- attr(rc_data, "forms")$instrument_label |>
+    purrr::set_names(forms)
+
+
+  events_attr <- attr(rc_data, "events")
+  # If there is more than one arm, append the arm number to the event name
+  if (length(unique(events_attr$arm_num)) > 1) {
+
+    events_attr <-
+      events_attr |>
+      dplyr::mutate(
+        event_name = stringr::str_c(event_name, " (Arm ", arm_num, ")")
+      )
+
+  }
+
+  events_dict <- events_attr$event_name |>
+    purrr::set_names(events)
+
   form_count_list <-
     purrr::map(
       events,
@@ -383,14 +403,17 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
           values_from = "n",
           values_fill = 0
         ) |>
-        dplyr::select(-"redcap_event_name")
+        dplyr::select(-"redcap_event_name") |>
+        dplyr::rename_with(~ forms_dict[.], -1) |>
+        dplyr::rename("Patient ID" = 1)
+
     ) |>
-    purrr::set_names(events)
+    purrr::set_names(events_dict[events])
 
   wb <- openxlsx::createWorkbook()
   purrr::walk2(
     form_count_list,
-    events,
+    names(form_count_list),
     function(.x, .y) {
       openxlsx::addWorksheet(wb, .y)
       openxlsx::writeData(wb, sheet = .y, .x)
@@ -400,6 +423,5 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
     wb, here::here(save_path, "form_count_list.xlsx"),
     overwrite = TRUE
   )
-
 
 }

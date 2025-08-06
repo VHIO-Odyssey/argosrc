@@ -421,34 +421,23 @@ argos_count_forms <- function(rc_data, save_path = NULL, mark_0 = TRUE) {
         wb, sheet = form_name,
         form_tbl, tableStyle = "TableStyleLight9"
       )
-      zero_cells <- which(form_tbl[-1] == 0, arr.ind = TRUE)
-      if (nrow(zero_cells) > 0) {
-        rows <- zero_cells[, 1] + 1
-        cols <- zero_cells[, 2] + 1
 
-        if (mark_0) {
-        purrr::walk2(
-          rows, cols,
-          ~ openxlsx::addStyle(
+      if (mark_0) {
+        zero_cells <- which(form_tbl[-1] == 0, arr.ind = TRUE)
+        if (nrow(zero_cells) > 0) {
+          rows <- zero_cells[, 1] + 1
+          cols <- zero_cells[, 2] + 1
+
+          openxlsx::addStyle(
             wb, sheet = form_name,
             style = bg_style,
-            rows = .x, cols = .y,
-            gridExpand = TRUE, stack = TRUE
-          ),
-          .progress = stringr::str_c(
-            "Formatting form ",
-            form_name, " (",
-            which(names(form_count_list) == form_name),"/",
-            length(names(form_count_list)), ")"
+            rows = rows, cols = cols,
+            gridExpand = FALSE, stack = TRUE
           )
-        )
         }
       }
     }
   )
-  openxlsx::saveWorkbook(
-    wb, here::here(save_path),
-    overwrite = TRUE
-  )
+  openxlsx::saveWorkbook(wb, save_path, overwrite = TRUE)
 
 }

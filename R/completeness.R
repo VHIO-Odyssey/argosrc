@@ -304,7 +304,6 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
 
   id_var <- attr(rc_data, "id_var")
   subjects <- attr(rc_data, "subjects")
-  subjects_tbl <- tibble::tibble("{id_var}" := subjects)
   forms <- attr(rc_data, "forms")$instrument_name
   events <- attr(rc_data, "events")$unique_event_name
   forms_events_mapping <- attr(rc_data, "forms_events_mapping")
@@ -354,7 +353,8 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
       ) |>
         dplyr::mutate(
           n = tidyr::replace_na(n, 0)
-        )
+        ) |>
+        dplyr::arrange(.data[[id_var]])
 
     }
   ) |>
@@ -369,6 +369,8 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
     ) |>
     dplyr::arrange(redcap_event_name)
 
+  if (is.null(save_path)) return(form_count_raw)
+
   form_count_list <-
     purrr::map(
       events,
@@ -381,19 +383,9 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
           values_from = "n",
           values_fill = 0
         ) |>
-        dplyr::full_join(subjects_tbl) |>
-        dplyr::arrange(.data[[id_var]]) |>
-        tidyr::fill("redcap_event_name", .direction = "downup") |>
-        dplyr::mutate(
-          dplyr::across(tidyselect::where(is.integer), ~ tidyr::replace_na(., 0))
-        ) |>
         dplyr::select(-"redcap_event_name")
     ) |>
     purrr::set_names(events)
-
-
-  if (is.null(save_path)) return(form_count_list)
-
 
   wb <- openxlsx::createWorkbook()
   purrr::walk2(

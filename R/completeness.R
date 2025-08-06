@@ -300,7 +300,7 @@ argos_check_completeness <- function(
 #'
 #' @return A list of tibbles, each containing counts of completed forms per record for a specific event.
 #' @export
-argos_count_forms <- function(rc_data, save_path = NULL) {
+argos_count_forms <- function(rc_data, save_path = NULL, mark_0 = TRUE) {
 
   id_var <- attr(rc_data, "id_var")
   subjects <- attr(rc_data, "subjects")
@@ -406,21 +406,48 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
         dplyr::select(-"redcap_event_name") |>
         dplyr::rename_with(~ forms_dict[.], -1) |>
         dplyr::rename("Patient ID" = 1)
-
     ) |>
     purrr::set_names(events_dict[events])
 
   wb <- openxlsx::createWorkbook()
+  bg_style <- openxlsx::createStyle(fgFill = "#D3D3D3")
+
   purrr::walk2(
     form_count_list,
     names(form_count_list),
-    function(.x, .y) {
-      openxlsx::addWorksheet(wb, .y)
-      openxlsx::writeData(wb, sheet = .y, .x)
+    function(form_tbl, form_name) {
+      openxlsx::addWorksheet(wb, form_name)
+      openxlsx::writeDataTable(
+        wb, sheet = form_name,
+        form_tbl, tableStyle = "TableStyleLight9"
+      )
+      zero_cells <- which(form_tbl[-1] == 0, arr.ind = TRUE)
+      if (nrow(zero_cells) > 0) {
+        rows <- zero_cells[, 1] + 1
+        cols <- zero_cells[, 2] + 1
+
+        if (mark_0) {
+        purrr::walk2(
+          rows, cols,
+          ~ openxlsx::addStyle(
+            wb, sheet = form_name,
+            style = bg_style,
+            rows = .x, cols = .y,
+            gridExpand = TRUE, stack = TRUE
+          ),
+          .progress = stringr::str_c(
+            "Formatting form ",
+            form_name, " (",
+            which(names(form_count_list) == form_name),"/",
+            length(names(form_count_list)), ")"
+          )
+        )
+        }
+      }
     }
   )
   openxlsx::saveWorkbook(
-    wb, here::here(save_path, "form_count_list.xlsx"),
+    wb, here::here(save_path),
     overwrite = TRUE
   )
 

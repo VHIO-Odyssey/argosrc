@@ -1,11 +1,15 @@
 # Plausability related general functions
 
 
-filter_issues <- function(verified_data, issue) {
+# Internal helper to filter issues from the verified data and glue the issue
+# text
+filter_issues <- function(verified_data, issue_text) {
 
   verified_data |>
     dplyr::filter(!.data$.ok | is.na(.data$.ok)) |>
-    dplyr::mutate(issue = glue::glue(issue, .open = "<<", .close = ">>")) |>
+    dplyr::mutate(
+      issue = glue::glue(issue_text, .open = "<<", .close = ">>")
+    ) |>
     dplyr::select(-".ok") |>
     dplyr::select(
       1,
@@ -21,25 +25,9 @@ filter_issues <- function(verified_data, issue) {
 }
 
 
-verify_flipped_dates <- function(
-    to_verify_data,
-    start_date,
-    end_date
-) {
-
-  to_verify_data |>
-    odytools::ody_rc_format() |>
-    dplyr::mutate(
-      # If there is no start or end date, it is considered correct. This check
-      # only focuses on ensuring that start <= end_date when both dates exist.
-      .ok = .data[[start_date]] <= .data[[end_date]] |
-        is.na(.data[[start_date]]) |
-        is.na(.data[[end_date]])
-    )
-
-}
 
 
+# Helper functions to detect applicable verifications
 determine_verification_match <- function(verification, metadata) {
 
   involved_variables <- verification$involved_variables[[1]]
@@ -145,7 +133,7 @@ determine_verification_match <- function(verification, metadata) {
 #' Verifications that do not apply or fail to match are excluded.
 #'
 #' @export
-argos_seek <- function(
+argos_check_plausability <- function(
     rc_data,
     run_verifications = TRUE,
     return_no_issues_verif = FALSE

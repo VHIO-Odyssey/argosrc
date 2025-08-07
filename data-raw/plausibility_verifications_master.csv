@@ -1,0 +1,6 @@
+﻿id;version;description;complexity;arguments;candidate_fields
+verif_1;1;In any pair of start and end dates, the start date is  before or on the end date.;intraform;"start_date::ae_startdate::seronco1
+end_date::ae_enddate::seronco1";"start_date = 'ae_startdate', end_date = 'ae_enddate'
+start_date = 'ae_start_date', end_date = 'ae_end_date'
+start_date = 'sae_onset_high_severity_date', end_date = 'sae_stop_date'
+start_date = 'medhis_start_date', end_date = 'medhis_end_date'"

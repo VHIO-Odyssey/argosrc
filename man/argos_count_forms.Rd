@@ -4,7 +4,7 @@
 \alias{argos_count_forms}
 \title{Count form completions in REDCap data}
 \usage{
-argos_count_forms(rc_data, save_path = NULL)
+argos_count_forms(rc_data, save_path = NULL, mark_0 = TRUE)
 }
 \arguments{
 \item{rc_data}{A REDCap data frame imported with  `odytools::ody_rc_import()`}

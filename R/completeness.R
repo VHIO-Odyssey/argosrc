@@ -121,7 +121,8 @@ verify_completeness_form <- function(
     current_form_name,
     conditions_list,
     user_na_is_data,
-    missing_data_codes
+    missing_data_codes,
+    check_for
 ) {
 
   id_var <- attr(rc_data, "id_var")
@@ -134,14 +135,14 @@ verify_completeness_form <- function(
 
     empty_result <-
       tibble::tibble(
-      "{id_var}" := NA_character_,
-      redcap_event_name = NA_character_,
-      redcap_form_name = NA_character_,
-      redcap_instance_type = NA_character_,
-      redcap_instance_number = NA_character_,
-      variable = NA_character_,
-      missing_type = NA_character_
-    ) |>
+        "{id_var}" := NA_character_,
+        redcap_event_name = NA_character_,
+        redcap_form_name = NA_character_,
+        redcap_instance_type = NA_character_,
+        redcap_instance_number = NA_character_,
+        variable = NA_character_,
+        missing_type = NA_character_
+      ) |>
       dplyr::filter(!is.na(variable))
 
     return(empty_result)
@@ -149,7 +150,7 @@ verify_completeness_form <- function(
   }
 
   current_variables_name <-
-  current_form |>
+    current_form |>
     dplyr::select(
       -all_of(id_var),
       -"redcap_event_name",
@@ -182,39 +183,75 @@ verify_completeness_form <- function(
         na_fn <- is.na
       }
 
+      if (check_for %in% c("missing", "both")) {
 
-      current_form |>
-        # Safe version. If the filter fails (mainly because the variables
-        # declared in current_condition do not belong to the current form) it
-        # returns the original unfiltered form.
-        safe_filter(!!current_condition) |>
-        dplyr::filter(na_fn(!!current_variable)) |>
-        dplyr::mutate(
-          variable = x,
-          condition = current_condition_label,
-          missing_type = dplyr::case_when(
-            labelled::is_regular_na(!!current_variable) ~ "Regular",
-            labelled::is_user_na(!!current_variable) ~ "User defined",
-          ),
-          missing_value = dplyr::case_when(
-            labelled::is_regular_na(!!current_variable) ~ NA_character_,
-            labelled::is_user_na(!!current_variable) ~ as.character(!!current_variable)
+        missing_values <-
+          current_form |>
+          # Safe version. If the filter fails (mainly because the variables
+          # declared in current_condition do not belong to the current form) it
+          # returns the original unfiltered form.
+          safe_filter(!!current_condition) |>
+          dplyr::filter(na_fn(!!current_variable)) |>
+          dplyr::mutate(
+            variable = x,
+            condition = current_condition_label,
+            completeness_issue = dplyr::case_when(
+              labelled::is_regular_na(!!current_variable) ~ "Regular missing value",
+              labelled::is_user_na(!!current_variable) ~ "User missing value",
+            ),
+            missing_value = dplyr::case_when(
+              labelled::is_regular_na(!!current_variable) ~ NA_character_,
+              labelled::is_user_na(!!current_variable) ~ as.character(!!current_variable)
+            )
+          ) |>
+          dplyr::select(
+            tidyselect::any_of(c(
+              id_var,
+              "redcap_event_name",
+              "redcap_form_name",
+              "redcap_instance_type",
+              "redcap_instance_number"
+            )),
+            "variable",
+            "condition",
+            "completeness_issue",
+            "missing_value"
           )
-        ) |>
-        dplyr::select(
-          tidyselect::any_of(c(
-            id_var,
-            "redcap_event_name",
-            "redcap_form_name",
-            "redcap_instance_type",
-            "redcap_instance_number"
-          )),
-          "variable",
-          "condition",
-          "missing_type",
-          "missing_value"
-        )
 
+      } else {missing_values <- NULL}
+
+      if (check_for %in% c("unexpected", "both")) {
+
+        unexpected_values <-
+          current_form |>
+          # Safe version. If the filter fails (mainly because the variables
+          # declared in current_condition do not belong to the current form) it
+          # returns the original unfiltered form.
+          safe_filter(!(!!current_condition)) |>
+          dplyr::filter(!is.na(!!current_variable)) |>
+          dplyr::mutate(
+            variable = x,
+            condition = current_condition_label,
+            completeness_issue = "Unexpected value",
+            missing_value = NA_character_
+          ) |>
+          dplyr::select(
+            tidyselect::any_of(c(
+              id_var,
+              "redcap_event_name",
+              "redcap_form_name",
+              "redcap_instance_type",
+              "redcap_instance_number"
+            )),
+            "variable",
+            "condition",
+            "completeness_issue",
+            "missing_value"
+          )
+
+      } else {unexpected_values <- NULL}
+
+      dplyr::bind_rows(missing_values, unexpected_values)
 
     }
   ) |>
@@ -240,6 +277,12 @@ verify_completeness_form <- function(
 #'   `"metadata"`, `"missing"`, and `"forms"`.
 #' @param forms Character vector of form names to check or `"All"` (the default) to check all forms.
 #' @param user_na_is_data Logical, if TRUE treats user-defined missing values as non-missing values.
+#' @param check_for Character value indicating what to check for:
+#' \describe{
+#'   \item{missing}{Values that according to its branching logic should be present and they are not.}
+#'   \item{unexpected}{Values that according to its branching logic should not be present and they are.}
+#'   \item{both}{Both missing and unexpected values.}
+#' }
 #' @param extra_conditions_list Optional list of additional conditions to consider.
 #'
 #' @return A tibble summarizing missing data per variable and form.
@@ -248,7 +291,10 @@ argos_check_completeness <- function(
     rc_data,
     forms = "All",
     user_na_is_data = TRUE,
+    check_for = c("missing", "unexpected", "both"),
     extra_conditions_list = NULL) {
+
+  check_for <- rlang::arg_match(check_for)
 
   metadata <- attr(rc_data, "metadata")
   missing_data_codes <- attr(rc_data, "missing")
@@ -278,7 +324,8 @@ argos_check_completeness <- function(
       .,
       conditions_list,
       user_na_is_data,
-      missing_data_codes
+      missing_data_codes,
+      check_for
     ),
     .progress = "Argos is searching \U1F415"
   ) |>

@@ -8,6 +8,7 @@ argos_check_completeness(
   rc_data,
   forms = "All",
   user_na_is_data = TRUE,
+  check_for = c("missing", "unexpected", "both"),
   extra_conditions_list = NULL
 )
 }
@@ -18,6 +19,13 @@ argos_check_completeness(
 \item{forms}{Character vector of form names to check or `"All"` (the default) to check all forms.}
 
 \item{user_na_is_data}{Logical, if TRUE treats user-defined missing values as non-missing values.}
+
+\item{check_for}{Character value indicating what to check for:
+\describe{
+  \item{missing}{Values that according to its branching logic should be present and they are not.}
+  \item{unexpected}{Values that according to its branching logic should not be present and they are.}
+  \item{both}{Both missing and unexpected values.}
+}}
 
 \item{extra_conditions_list}{Optional list of additional conditions to consider.}
 }

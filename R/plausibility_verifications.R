@@ -1,20 +1,21 @@
 # Specific code for each pausability verification
 
 
-verif_1_1 <- function(rc_data, start_date, end_date) {
+verif_1_1 <- function(rc_data, date1, date2) {
 
-  odytools::ody_rc_select(rc_data, !!start_date, !!end_date) |>
+  odytools::ody_rc_select(rc_data, !!date1, !!date2) |>
     odytools::ody_rc_format() |>
     dplyr::mutate(
-      # If there is no start_date or end_date date, it is considered correct. This check
-      # only focuses on ensuring that start_date <= end_date when both dates exist.
-      .ok = .data[[start_date]] <= .data[[end_date]] |
-        is.na(.data[[start_date]]) |
-        is.na(.data[[end_date]])
+      # If there is no date1 or date2 date, it is considered correct (this is a
+      # completeness matter). This check only focuses on ensuring that
+      # date1 <= date2 when both dates exist.
+      .ok = .data[[date1]] <= .data[[date2]] |
+        is.na(.data[[date1]]) |
+        is.na(.data[[date2]])
     ) |>
     filter_issues(
       issue_text = glue::glue(
-        "{start_date} (<<{start_date}>>) is after {end_date} (<<{end_date}>>)."
+        "{date1} (<<{date1}>>) is after {date2} (<<{date2}>>)."
       )
     )
 

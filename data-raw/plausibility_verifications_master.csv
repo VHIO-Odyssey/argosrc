@@ -1,8 +1,9 @@
-﻿id;version;description;complexity;arguments;candidate_fields
-verif_1;1;In any pair of start and end dates, the start date is before or on the end date.;intraform;"start_date::ae_startdate::seronco1
-end_date::ae_enddate::seronco1";"start_date = 'ae_startdate', end_date = 'ae_enddate'
-start_date = 'ae_start_date', end_date = 'ae_end_date'
-start_date = 'sae_onset_high_severity_date', end_date = 'sae_stop_date'
-start_date = 'medhis_start_date', end_date = 'medhis_end_date'
-start_date = 'prev_qt_startdate', end_date = 'prev_qt_enddate'
-start_date = 'pt_first_date', end_date = 'pt_last_date'"
+﻿id;version;description;comments;complexity;arguments;candidate_fields
+verif_1;1;A given date (date1) must be before or on a second given date (date2). ;This is typically used to verify pairs of start and end dates.;intraform;"date1::ic_date::seronco1
+date2::ic_date::seronco1";"date1 = 'ae_startdate', date2 = 'ae_enddate'
+date1 = 'ae_start_date', date2 = 'ae_end_date'
+date1 = 'sae_onset_high_severity_date', date2 = 'sae_stop_date'
+date1 = 'medhis_start_date', date2 = 'medhis_end_date'
+date1 = 'prev_qt_startdate', date2 = 'prev_qt_enddate'
+date1 = 'pt_first_date', date2 = 'pt_last_date'
+date1 = 'ic_date', date2 = 'ic_date_reconsent'"

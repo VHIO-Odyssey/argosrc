@@ -141,7 +141,7 @@ verify_completeness_form <- function(
         redcap_instance_type = NA_character_,
         redcap_instance_number = NA_character_,
         variable = NA_character_,
-        missing_type = NA_character_
+        completeness_issue = NA_character_
       ) |>
       dplyr::filter(!is.na(variable))
 
@@ -196,8 +196,8 @@ verify_completeness_form <- function(
             variable = x,
             condition = current_condition_label,
             completeness_issue = dplyr::case_when(
-              labelled::is_regular_na(!!current_variable) ~ "Regular missing value",
-              labelled::is_user_na(!!current_variable) ~ "User missing value",
+              labelled::is_regular_na(!!current_variable) ~ "Regular missing",
+              labelled::is_user_na(!!current_variable) ~ "User missing",
             ),
             missing_value = dplyr::case_when(
               labelled::is_regular_na(!!current_variable) ~ NA_character_,
@@ -232,7 +232,7 @@ verify_completeness_form <- function(
           dplyr::mutate(
             variable = x,
             condition = current_condition_label,
-            completeness_issue = "Unexpected value",
+            completeness_issue = "Unexpected",
             missing_value = NA_character_
           ) |>
           dplyr::select(
@@ -317,21 +317,32 @@ argos_check_completeness <- function(
 
   if (any(forms == "All")) forms <- attr(rc_data, "forms")$instrument_name
 
-  purrr::map(
-    forms,
-    ~ verify_completeness_form(
-      rc_data,
-      .,
-      conditions_list,
-      user_na_is_data,
-      missing_data_codes,
-      check_for
-    ),
-    .progress = "Argos is searching \U1F415"
-  ) |>
+  completeness_result <-
+    purrr::map(
+      forms,
+      ~ verify_completeness_form(
+        rc_data,
+        .,
+        conditions_list,
+        user_na_is_data,
+        missing_data_codes,
+        check_for
+      ),
+      .progress = "Argos is searching \U1F415"
+    ) |>
     purrr::list_rbind() |>
     dplyr::relocate(.data[["condition"]], .after = "variable") |>
     dplyr::arrange(.data[[attr(rc_data, "id_var")]])
+
+  if (all(is.na(completeness_result$missing_value))) {
+
+    completeness_result <-
+      completeness_result |>
+      dplyr::select(-"missing_value")
+
+  }
+
+  completeness_result
 
 }
 

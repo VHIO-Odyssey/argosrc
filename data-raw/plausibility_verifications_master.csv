@@ -1,5 +1,5 @@
 ﻿id;version;description;comments;complexity;arguments;candidate_fields
-verif_1;1;A given date (date1) must be before or on a second given date (date2). ;This is typically used to verify pairs of start and end dates.;intraform;"date1::ic_date::seronco1
+verif_1;1;A given date (date1) is no later than a second given date (date2). ;This is typically used to verify start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.;intraform;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'ae_startdate', date2 = 'ae_enddate'
 date1 = 'ae_start_date', date2 = 'ae_end_date'
 date1 = 'sae_onset_high_severity_date', date2 = 'sae_stop_date'
@@ -7,3 +7,6 @@ date1 = 'medhis_start_date', date2 = 'medhis_end_date'
 date1 = 'prev_qt_startdate', date2 = 'prev_qt_enddate'
 date1 = 'pt_first_date', date2 = 'pt_last_date'
 date1 = 'ic_date', date2 = 'ic_date_reconsent'"
+verif_2;1;The period (years) between two given dates exceeds a defined minimum value.;;interform;"date1::ic_date::seronco1
+date2::ic_date::seronco1
+min_period";date1 = 'ic_date', date2 = 'dob', min_period = 18

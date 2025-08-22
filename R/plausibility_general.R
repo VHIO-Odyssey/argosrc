@@ -9,7 +9,6 @@ filter_issues <- function(verified_data, issue_text) {
     dplyr::mutate(
       issue = glue::glue(issue_text, .open = "<<", .close = ">>")
     ) |>
-    dplyr::select(-".ok") |>
     dplyr::select(
       1,
       dplyr::any_of(c(
@@ -184,7 +183,7 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
 
   metadata <- attr(rc_data, "metadata")
 
-  detected_verifications <-
+  detected_verifications_v0 <-
     plausibility_verifications_master |>
     dplyr::mutate(
       valid_candidates = purrr::pmap(
@@ -198,13 +197,7 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
       verif_fn = stringr::str_c(.data[["id"]], "_", .data[["version"]])
     ) |>
     dplyr::select("verif_fn",  verif_arg = "valid_candidates", "description") |>
-    tidyr::unnest("verif_arg") |>
-    dplyr::mutate(
-      needs_constants = purrr::map_lgl(
-        .data[["verif_arg"]],
-        ~ any(purrr::map_lgl(., ~ any(is.na(.))))
-      )
-    )
+    tidyr::unnest("verif_arg")
 
   if (!is.null(extra_mapping)) {
 
@@ -225,7 +218,6 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
 
         }
       )
-
 
     verif_extra_args <-
       purrr::map(
@@ -249,7 +241,7 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
         function(verif_extra_names, verif_extra_args, verif_extra_values) {
 
           verifs_to_complete <-
-            detected_verifications |>
+            detected_verifications_v0 |>
             dplyr::filter(.data[["verif_fn"]] == verif_extra_names)
 
           verifs_to_complete |>
@@ -290,9 +282,9 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
       purrr::list_rbind() |>
       dplyr::arrange(.data[["verif_fn"]])
 
-    detected_verifications <-
+    detected_verifications_v0 <-
       dplyr::bind_rows(
-        detected_verifications |>
+        detected_verifications_v0 |>
           dplyr::filter(!.data[["verif_fn"]] %in% verif_extra_names),
         detected_verifications_modif
       ) |>
@@ -300,7 +292,31 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
 
   }
 
-  detected_verifications |>
+  detected_verifications <-
+    detected_verifications_v0 |>
+    dplyr::mutate(
+      needs_constants = purrr::map_lgl(
+        .data[["verif_arg"]],
+        ~ any(purrr::map_lgl(., ~ any(is.na(.))))
+      )
+    )
+
+  detected_verifications_ready <-
+    detected_verifications |>
+    dplyr::filter(!.data[["needs_constants"]]) |>
+    dplyr::select(-"needs_constants")
+
+  detected_verifications_undefined <-
+    detected_verifications |>
+    dplyr::filter(.data[["needs_constants"]]) |>
+    dplyr::select(-"needs_constants") |>
+    dplyr::mutate(
+      n_issues = NA,
+      issues = NA
+    )
+
+  detected_verifications_executed <-
+    detected_verifications_ready |>
     dplyr::mutate(
       issues = purrr::map2(
         verif_fn, verif_arg,
@@ -311,5 +327,24 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
       n_issues = purrr::map_int(issues, nrow),
       .before = "issues"
     )
+
+  if (nrow(detected_verifications_undefined) > 0) {
+
+    warning("Some verifications were not executed because of missing argument definitions. Please provide these via the extra_mapping argument.")
+
+    dplyr::bind_rows(
+      detected_verifications_executed,
+      detected_verifications_undefined
+    ) |>
+      dplyr::arrange(.data[["verif_fn"]])
+
+  } else {
+
+    detected_verifications_executed
+
+  }
+
+
+
 
 }

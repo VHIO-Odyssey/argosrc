@@ -2,6 +2,7 @@
 
 
 verif_1_1 <- function(rc_data, date1, date2) {
+# Intraform
 
   odytools::ody_rc_select(rc_data, !!date1, !!date2) |>
     odytools::ody_rc_format() |>
@@ -16,6 +17,35 @@ verif_1_1 <- function(rc_data, date1, date2) {
     filter_issues(
       issue_text = glue::glue(
         "{date1} (<<{date1}>>) is after {date2} (<<{date2}>>)."
+      )
+    )
+
+}
+
+verif_2_1 <- function(rc_data, date1, date2, min_period, max_period, unit) {
+# Interform
+# Time period in years.
+
+  # The reference variable is date1.
+  date1_tbl <- odytools::ody_rc_select(rc_data, !!date1)
+  date2_tbl <- odytools::ody_rc_select(rc_data, !!date2) |>
+    dplyr::select(1, !!date2)
+
+  dplyr::inner_join(date1_tbl, date2_tbl, by = attr(rc_data, "id_var")) |>
+    odytools::ody_rc_format() |>
+    dplyr::mutate(
+      period_years = lubridate::time_length(
+        .data[[date2]] - .data[[date1]], unit = unit
+      ),
+      .ok = dplyr::between(
+        period_years,
+        as.numeric(min_period),
+        as.numeric(max_period)
+      )
+    ) |>
+    filter_issues(
+      issue_text = glue::glue(
+        "Time from {date1} (<<{date1}>>) to {date2} (<<{date2}>>) is <<round(period_years, 1)>> {unit} (expected {min_period}-{max_period})."
       )
     )
 

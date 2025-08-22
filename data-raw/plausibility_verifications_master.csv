@@ -1,14 +1,14 @@
-﻿id;version;description;comments;complexity;arguments;candidate_fields
-verif_1;1;A given date (date1) is no later than a second given date (date2). ;This is typically used to verify start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.;intraform;"date1::ic_date::seronco1
+﻿id;version;description;complexity;arguments;candidate_fields;comments
+verif_1;1;A given date is no later than a second given date. ;intraform;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'ae_startdate', date2 = 'ae_enddate'
 date1 = 'ae_start_date', date2 = 'ae_end_date'
 date1 = 'sae_onset_high_severity_date', date2 = 'sae_stop_date'
 date1 = 'medhis_start_date', date2 = 'medhis_end_date'
 date1 = 'prev_qt_startdate', date2 = 'prev_qt_enddate'
 date1 = 'pt_first_date', date2 = 'pt_last_date'
-date1 = 'ic_date', date2 = 'ic_date_reconsent'"
-verif_2;1;The period (years) between two given dates is inside a defined range.;date1 must be the earlier date.;interform;"date1::ic_date::seronco1
+date1 = 'ic_date', date2 = 'ic_date_reconsent'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.
+verif_2;1;The period between the two given dates falls within a defined range.;interform;"date1::ic_date::seronco1
 date2::ic_date::seronco1
 min_period
-max_period";"date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100
-date1 = 'dob', date2 = 'ic_date'"
+max_period
+unit";date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100, unit = 'years';The period of time is defined from date1 to date2. Make sure date1 is the expected earlier date.

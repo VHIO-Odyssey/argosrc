@@ -8,9 +8,9 @@ plausibility_verifications_master <-
     candidates_mapping = purrr::map(candidate_fields, create_candidates_mapping)
   ) |>
   dplyr::select(
-    id, version, description,
-    comments, complexity,
-    arguments_metadata, candidates_mapping
+    id, version, description,complexity,
+    arguments_metadata, candidates_mapping,
+    comments,
   )
 
 

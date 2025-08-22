@@ -31,3 +31,82 @@
 #' }
 "plausibility_verifications_master"
 
+
+# This functions is completely specific to the creation of the verifications
+# master. That is why it is here.
+create_arguments_metadata <- function(arguments) {
+
+  splited_arguments <-
+    arguments |>
+    stringr::str_split("\n") |>
+    unlist()
+
+  purrr::map(
+    splited_arguments,
+    function(x) {
+
+      if (!stringr::str_detect(x, "::")) {
+
+        result <-
+          tibble::tibble(
+            argument = x,
+            argument_type = "constant",
+            field_type = NA,
+            field_choices = NA,
+            field_validation = NA,
+          )
+
+        return(result)
+
+      }
+
+      argument <- stringr::str_split(x, "::") |> unlist()
+
+      metadata <-
+        odytools::ody_rc_get_metadata(
+          Sys.getenv(
+            stringr::str_c(argument[3], "_api_key") |>
+              stringr::str_to_upper()
+          )
+        ) |>
+        dplyr::filter(field_name == argument[2])
+
+      tibble::tibble(
+        argument = argument[1],
+        argument_type = "redcap_field",
+        field_type = metadata$field_type,
+        field_choices = metadata$select_choices_or_calculations,
+        field_validation = metadata$text_validation_type_or_show_slider_number,
+      )
+
+    }
+  ) |>
+    purrr::list_rbind()
+
+}
+
+
+
+# This functions is completely specific to the creation of the verifications
+# master. That is why it is here.
+create_candidates_mapping <- function(candidates) {
+
+  candidates |>
+    stringr::str_split("\n|\r\n") |>
+    unlist() |>
+    purrr::map(
+      function(x) {
+        arg_vector <- stringr::str_c("c(", x, ")") |> str2lang() |> eval()
+        arg_names <- names(arg_vector)
+        names(arg_vector) <- NULL
+        purrr::map2(
+          arg_vector, arg_names,
+          ~ tibble::tibble("{.y}" := .x)
+        ) |>
+          purrr::list_cbind()
+      }
+    ) |>
+    purrr::list_rbind()
+
+}
+

@@ -7,6 +7,8 @@ date1 = 'medhis_start_date', date2 = 'medhis_end_date'
 date1 = 'prev_qt_startdate', date2 = 'prev_qt_enddate'
 date1 = 'pt_first_date', date2 = 'pt_last_date'
 date1 = 'ic_date', date2 = 'ic_date_reconsent'"
-verif_2;1;The period (years) between two given dates exceeds a defined minimum value.;;interform;"date1::ic_date::seronco1
+verif_2;1;The period (years) between two given dates is inside a defined range.;;interform;"date1::ic_date::seronco1
 date2::ic_date::seronco1
-min_period";date1 = 'ic_date', date2 = 'dob', min_period = 18
+min_period
+max_period";"date1 = 'ic_date', date2 = 'dob', min_period = 18, max_period = 100
+date1 = 'ic_date', date2 = 'trial_finish_day'"

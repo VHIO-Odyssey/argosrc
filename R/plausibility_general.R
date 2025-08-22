@@ -30,8 +30,18 @@ find_valid_candidates <- function(
     complexity,
     metadata) {
 
+  # Para detectar si los argumentos corresponden a variables de redcap hay que
+  # quedarse con los asi definidos y extraer las constantes.
+  redcap_fields <- arguments_metadata |>
+    dplyr::filter(.data[["argument_type"]] == "redcap_field") |>
+    dplyr::pull(argument)
+
   candidates_list <-
-    purrr::map(1:nrow(candidates_mapping), ~ candidates_mapping[., ])
+    purrr::map(
+      1:nrow(candidates_mapping), ~
+        candidates_mapping[., ] |>
+        dplyr::select(tidyselect::all_of(redcap_fields))
+    )
 
   candidates_index <-
     purrr::map_lgl(
@@ -107,7 +117,36 @@ find_valid_candidates <- function(
 
   if (length(valid_candidates) == 0) return(NA)
 
-  valid_candidates
+
+  # Se añaden las constantes si las hubiere.
+  if (any(arguments_metadata$argument_type == "constant")) {
+
+    purrr::map(
+      valid_candidates,
+      ~ dplyr::left_join(., candidates_mapping, by = redcap_fields)
+    )
+    # constants <-
+    #   arguments_metadata |>
+    #   dplyr::filter(.data[["argument_type"]] == "constant") |>
+    #   dplyr::pull("argument") |>
+    #   purrr::map(
+    #     ~ tibble::tibble(
+    #       "{.}" := NA_character_
+    #     )
+    #   ) |>
+    #   purrr::list_cbind()
+    #
+    #
+    # purrr::map(
+    #   valid_candidates,
+    #   ~ dplyr::bind_cols(., constants)
+    # )
+
+  } else {
+
+    valid_candidates
+
+  }
 
 }
 
@@ -139,7 +178,7 @@ find_valid_candidates <- function(
 #' collected.
 #'
 #' @export
-argos_check_plausibility <- function(rc_data) {
+argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
 
   rc_data_expr <- rlang::enexpr(rc_data)
 
@@ -159,7 +198,13 @@ argos_check_plausibility <- function(rc_data) {
       verif_fn = stringr::str_c(.data[["id"]], "_", .data[["version"]])
     ) |>
     dplyr::select("verif_fn",  verif_arg = "valid_candidates", "description") |>
-    tidyr::unnest("verif_arg")
+    tidyr::unnest("verif_arg") |>
+    dplyr::mutate(
+      needs_constants = purrr::map_lgl(
+        .data[["verif_arg"]],
+        ~ any(purrr::map_lgl(., ~ any(is.na(.))))
+      )
+    )
 
   detected_verifications |>
     dplyr::mutate(

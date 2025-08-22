@@ -206,6 +206,100 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
       )
     )
 
+  if (!is.null(extra_mapping)) {
+
+    verif_extra_names <-
+      purrr::map_chr(extra_mapping, ~ dplyr::pull(., "verif_fn")) |>
+      unique()
+
+    verif_extra_values <-
+      purrr::map(
+        verif_extra_names,
+        function(x) {
+
+          verif_index <- purrr::map_lgl(extra_mapping, ~ .$verif_fn == x)
+
+          extra_mapping[verif_index] |>
+            purrr::list_rbind() |>
+            dplyr::select(-"verif_fn")
+
+        }
+      )
+
+
+    verif_extra_args <-
+      purrr::map(
+        verif_extra_names,
+        ~ plausibility_verifications_master |>
+          dplyr::filter(
+            stringr::str_c(.data[["id"]], "_", .data[["version"]]) == .
+          ) |>
+          dplyr::select("arguments_metadata") |>
+          tidyr::unnest("arguments_metadata") |>
+          dplyr::filter(.data[["argument_type"]] == "redcap_field") |>
+          dplyr::pull("argument")
+      )
+
+
+    detected_verifications_modif <-
+      purrr::pmap(
+        tibble::tibble(
+          verif_extra_names, verif_extra_args, verif_extra_values
+        ),
+        function(verif_extra_names, verif_extra_args, verif_extra_values) {
+
+          verifs_to_complete <-
+            detected_verifications |>
+            dplyr::filter(.data[["verif_fn"]] == verif_extra_names)
+
+          verifs_to_complete |>
+            dplyr::mutate(
+              verif_arg = purrr::map(
+                verif_arg,
+                function(x) {
+                  args_join <-
+                    dplyr::left_join(
+                      x, verif_extra_values, by = verif_extra_args
+                    )
+
+                  no_added_constants <-
+                    args_join |>
+                    dplyr::select(tidyselect::ends_with(".y")) |>
+                    is.na() |>
+                    all()
+
+                  if (no_added_constants) {
+
+                    args_join |>
+                      dplyr::select(!tidyselect::ends_with(".y")) |>
+                      dplyr::rename_with(~ stringr::str_remove(., ".x$"))
+
+                  } else {
+
+                    args_join |>
+                      dplyr::select(!tidyselect::ends_with(".x")) |>
+                      dplyr::rename_with(~ stringr::str_remove(., ".y$"))
+
+                  }
+                }
+              )
+            )
+
+        }
+      ) |>
+      purrr::list_rbind() |>
+      dplyr::arrange(.data[["verif_fn"]])
+
+    detected_verifications <-
+      dplyr::bind_rows(
+        detected_verifications |>
+          dplyr::filter(!.data[["verif_fn"]] %in% verif_extra_names),
+        detected_verifications_modif
+      ) |>
+      dplyr::arrange(.data[["verif_fn"]])
+
+  }
+
   detected_verifications |>
     dplyr::mutate(
       issues = purrr::map2(

@@ -42,10 +42,23 @@ find_valid_candidates <- function(
         dplyr::select(tidyselect::all_of(redcap_fields))
     )
 
+
+  # Se mira si todas las variables candidatas están en el metadata.
+  # Se mira por patrón.
   candidates_index <-
     purrr::map_lgl(
       candidates_list,
-      ~ all(. %in% metadata$field_name)
+      function(candidates) {
+        purrr::map_lgl(
+          candidates,
+          ~stringr::str_detect(
+            metadata$field_name,
+            stringr::str_c("^", ., "$")
+          ) |>
+            any()
+        ) |>
+          all()
+      }
     )
 
   present_candidates <- candidates_list[candidates_index]
@@ -56,7 +69,13 @@ find_valid_candidates <- function(
   n_distinct_forms <-
     purrr::map_int(
       present_candidates,
-      ~ dplyr::filter(metadata, field_name %in% .) |>
+      ~ dplyr::filter(
+        metadata,
+        stringr::str_detect(
+          .data$field_name,
+          stringr::str_c("^", ., "$") |> stringr::str_c(collapse = "|")
+          )
+        ) |>
         dplyr::select(form_name) |>
         unique() |>
         nrow()
@@ -88,7 +107,13 @@ find_valid_candidates <- function(
       function(candidates_set) {
         purrr::map2(
           candidates_set, names(candidates_set),
-          ~ dplyr::filter(metadata, field_name == .x) |>
+          ~ dplyr::filter(
+            metadata,
+            stringr::str_detect(
+              .data$field_name,
+              stringr::str_c("^", ., "$")
+            )
+          ) |>
             dplyr::mutate(
               argument = .y
             ) |>
@@ -116,6 +141,8 @@ find_valid_candidates <- function(
         )|>
         dplyr::select("argument", "field_name", "field_match")
     )
+
+
 
 
   valid_candidates_index <-
@@ -308,17 +335,45 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
       issues = NA
     )
 
-  detected_verifications_executed <-
+  # Se comprueba si los argumentos hacen referncia a patrones de nombre. Si así
+  # es, el argumento pasa a ser un vector con todos los nombres que cumplen el
+  # patrón
+  detected_verifications_expanded_args <-
     detected_verifications_ready |>
+    dplyr::mutate(
+      verif_arg =  purrr::map(
+        .data$verif_arg,
+        function(args) {
+          full_args <-
+            purrr::map(
+              args,
+              ~ metadata |>
+                dplyr::filter(
+                  stringr::str_detect(
+                    field_name, stringr::str_c(
+                      "^", ., "$"
+                    )
+                  )
+                ) |>
+                dplyr::pull(field_name)
+            )
+          purrr::map2(
+            args, full_args,
+            function(args, full_args) {
+              if (length(full_args) > 1) full_args else args
+            }
+          )
+        }
+      )
+    )
+
+  detected_verifications_executed <-
+    detected_verifications_expanded_args |>
     dplyr::mutate(
       issues = purrr::map2(
         verif_fn, verif_arg,
         ~ do.call(.x, c(.y, rc_data = rc_data_expr))
       )
-    ) |>
-    dplyr::mutate(
-      n_issues = purrr::map_int(issues, nrow),
-      .before = "issues"
     )
 
   if (nrow(detected_verifications_undefined) > 0) {

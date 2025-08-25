@@ -12,3 +12,5 @@ date2::ic_date::seronco1
 min_period
 max_period
 unit";date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100, unit = 'years';The period of time is defined from date1 to date2. Make sure date1 is the expected earlier date.
+verif_3;1;All inclusion criteria are answered as 'Yes' and all exclusion criteria as 'No'.;intraform;"incl_vars::incl_1::seronco1
+excl_vars::excl_1::seronco1";incl_vars = 'incl_\\d', excl_vars = 'excl_\\d';incl_vars and excl_vars are a character vector with the name of all the inclusion criteria

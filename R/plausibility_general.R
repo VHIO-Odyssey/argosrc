@@ -52,22 +52,31 @@ find_valid_candidates <- function(
 
   if (length(present_candidates) == 0) return(NA)
 
+  # Number of diferent forms where the present candidates belong to
+  n_distinct_forms <-
+    purrr::map_int(
+      present_candidates,
+      ~ dplyr::filter(metadata, field_name %in% .) |>
+        dplyr::select(form_name) |>
+        unique() |>
+        nrow()
+    )
 
-  # If intraform complexity, we make sure al variables from the same set belong to
+  # If intraform complexity, we make sure all variables from the same set belong to
   # the same form
   if (complexity == "intraform") {
 
-    # Number of diferent forms where the present candidates belong to
-    n_distinct_forms <-
-      purrr::map_int(
-        present_candidates,
-        ~ dplyr::filter(metadata, field_name %in% .) |>
-          dplyr::select(form_name) |>
-          unique() |>
-          nrow()
-      )
-
     present_candidates <- present_candidates[n_distinct_forms == 1]
+
+    if (length(present_candidates) == 0) return(NA)
+
+  }
+
+  # If interform complexity, we make sure at least two variables from the same set
+  # belong to different forms.
+  if (complexity == "interform") {
+
+    present_candidates <- present_candidates[n_distinct_forms > 1]
 
     if (length(present_candidates) == 0) return(NA)
 
@@ -124,22 +133,6 @@ find_valid_candidates <- function(
       valid_candidates,
       ~ dplyr::left_join(., candidates_mapping, by = redcap_fields)
     )
-    # constants <-
-    #   arguments_metadata |>
-    #   dplyr::filter(.data[["argument_type"]] == "constant") |>
-    #   dplyr::pull("argument") |>
-    #   purrr::map(
-    #     ~ tibble::tibble(
-    #       "{.}" := NA_character_
-    #     )
-    #   ) |>
-    #   purrr::list_cbind()
-    #
-    #
-    # purrr::map(
-    #   valid_candidates,
-    #   ~ dplyr::bind_cols(., constants)
-    # )
 
   } else {
 

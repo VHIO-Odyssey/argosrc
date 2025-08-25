@@ -24,7 +24,6 @@ verif_1_1 <- function(rc_data, date1, date2) {
 
 verif_2_1 <- function(rc_data, date1, date2, min_period, max_period, unit) {
 # Interform
-# Time period in years.
 
   # The reference variable is date1.
   date1_tbl <- odytools::ody_rc_select(rc_data, !!date1)

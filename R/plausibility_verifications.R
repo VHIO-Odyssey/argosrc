@@ -49,3 +49,20 @@ verif_2_1 <- function(rc_data, date1, date2, min_period, max_period, unit) {
     )
 
 }
+
+verif_3_1 <- function(rc_data, var_name, expected) {
+
+  odytools::ody_rc_select(rc_data, !!var_name) |>
+    odytools::ody_rc_format() |>
+    tidyr::pivot_longer(cols = tidyselect::all_of(var_name)) |>
+    dplyr::mutate(
+      .ok = is.na(value) | value == expected,
+      # issue_text is here and not inside filter_issues because this glue does
+      # not refer no argument names but column values.
+      issue_text = glue::glue(
+        "{name} has value '{value}', expected '{expected}'."
+      )
+    ) |>
+    filter_issues()
+
+}

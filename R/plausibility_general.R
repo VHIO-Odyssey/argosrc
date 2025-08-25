@@ -2,13 +2,29 @@
 
 
 # Internal helper to filter issues from the verified data and glue the issue text
-filter_issues <- function(verified_data, issue_text) {
+filter_issues <- function(verified_data, issue_text = NULL) {
 
-  verified_data |>
-    dplyr::filter(!.data$.ok | is.na(.data$.ok)) |>
-    dplyr::mutate(
-      issue = glue::glue(issue_text, .open = "<<", .close = ">>")
-    ) |>
+  filtered_data <-
+    verified_data |>
+    dplyr::filter(!.data$.ok | is.na(.data$.ok))
+
+  if (is.null(issue_text)) {
+
+    filtered_data_issue <-
+      filtered_data |>
+      dplyr::mutate(issue = issue_text)
+
+  } else {
+
+    filtered_data_issue <-
+      filtered_data |>
+      dplyr::mutate(
+        issue = glue::glue(issue_text, .open = "<<", .close = ">>")
+      )
+
+  }
+
+  filtered_data_issue |>
     dplyr::select(
       1,
       dplyr::any_of(c(

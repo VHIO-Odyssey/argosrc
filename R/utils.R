@@ -15,6 +15,3 @@ safe_filter <- function(.data, ...) {
     }
   )
 }
-
-
-

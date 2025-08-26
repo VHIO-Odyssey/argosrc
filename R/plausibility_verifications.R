@@ -4,7 +4,7 @@
 verif_1_1 <- function(rc_data, date1, date2) {
 # Intraform
 
-  odytools::ody_rc_select(rc_data, !!date1, !!date2) |>
+  odytools::ody_rc_select(rc_data, !!date1, !!date2, .accept_form_name = FALSE) |>
     odytools::ody_rc_format() |>
     dplyr::mutate(
       # If there is no date1 or date2 date, it is considered correct (this is a
@@ -26,8 +26,8 @@ verif_2_1 <- function(rc_data, date1, date2, min_period, max_period, unit) {
 # Interform
 
   # The reference variable is date1.
-  date1_tbl <- odytools::ody_rc_select(rc_data, !!date1)
-  date2_tbl <- odytools::ody_rc_select(rc_data, !!date2) |>
+  date1_tbl <- odytools::ody_rc_select(rc_data, !!date1, .accept_form_name = FALSE)
+  date2_tbl <- odytools::ody_rc_select(rc_data, !!date2, .accept_form_name = FALSE) |>
     dplyr::select(1, !!date2)
 
   dplyr::inner_join(date1_tbl, date2_tbl, by = attr(rc_data, "id_var")) |>
@@ -52,7 +52,7 @@ verif_2_1 <- function(rc_data, date1, date2, min_period, max_period, unit) {
 
 verif_3_1 <- function(rc_data, var_name, expected) {
 
-  odytools::ody_rc_select(rc_data, !!var_name) |>
+  odytools::ody_rc_select(rc_data, !!var_name, .accept_form_name = FALSE) |>
     odytools::ody_rc_format() |>
     tidyr::pivot_longer(cols = tidyselect::all_of(var_name)) |>
     dplyr::mutate(

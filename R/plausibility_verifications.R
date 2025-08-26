@@ -65,3 +65,38 @@ verif_3_1 <- function(rc_data, var_name, expected) {
     )
 
 }
+
+
+verif_4_1 <- function(rc_data, var_name) {
+
+  odytools::ody_rc_select(rc_data, !!var_name, .accept_form_name = FALSE) |>
+    odytools::ody_rc_format() |>
+    tidyr::pivot_longer(cols = var_name) |>
+    dplyr::filter(!is.na(.data$value)) |>
+    dplyr::group_by(
+      .data[[attr(rc_data, "id_var")]],
+      .data$redcap_event_name,
+      .data$redcap_form_name,
+      .data$redcap_instance_type,
+      .data$name,
+      .data$value
+    ) |>
+    dplyr::summarise(
+      instance_value = stringr::str_c(redcap_instance_number, collapse = ",") |>
+        stringr::str_c("=", unique(value))
+    ) |>
+    dplyr::summarise(
+      grouped_values = stringr::str_c(instance_value, collapse = " & "),
+      redcap_instance_number = NA_character_,
+      n = dplyr::n()
+    ) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(
+      .ok = n == 1
+    ) |>
+    filter_issues(
+      issue_text = "<<name>> is not equal across instances (<<grouped_values>>)."
+    )
+
+}
+

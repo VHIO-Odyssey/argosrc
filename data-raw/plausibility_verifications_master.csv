@@ -16,3 +16,4 @@ unit";date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100, unit 
 verif_3;1;The variable's value matches the expected value.;intraform;"var_name::any
 expected";"var_name = 'incl_\\d+', expected = 'Yes'
 var_name = 'excl_\\d+', expected = 'No'";This verification accepts pattern names.
+verif_4;1;A variable's value is constant across instances.;interinstance;var_name::any;var_name = 'tm_n?tl_site_lesion_\\d+';This verification accepts pattern names.

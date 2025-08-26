@@ -60,6 +60,22 @@ create_arguments_metadata <- function(arguments) {
 
       }
 
+
+      if (stringr::str_detect(x, "::any$")) {
+
+        result <-
+          tibble::tibble(
+            argument = stringr::str_remove(x, "::any$"),
+            argument_type = "redcap_field",
+            field_type = NA,
+            field_choices = NA,
+            field_validation = NA,
+          )
+
+        return(result)
+
+      }
+
       argument <- stringr::str_split(x, "::") |> unlist()
 
       metadata <-

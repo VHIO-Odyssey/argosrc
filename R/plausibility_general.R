@@ -133,11 +133,15 @@ find_valid_candidates <- function(
         dplyr::mutate(
           #All NA's are set to character so they return TRUE when comparing
           # arguments with candidates
-          dplyr::across(tidyselect::everything(), ~ tidyr::replace_na(., "NA")),
+          dplyr::across(
+            tidyselect::everything(),
+            ~ tidyr::replace_na(as.character(.), "NA")
+          ),
+          no_need_match = field_type == "NA",
           type_ok = field_type_cand == field_type,
           choices_ok = field_choices_cand == field_choices,
           validation_ok = field_validation_cand == field_validation,
-          field_match = type_ok & choices_ok & validation_ok
+          field_match = no_need_match | (type_ok & choices_ok & validation_ok)
         )|>
         dplyr::select("argument", "field_name", "field_match")
     )

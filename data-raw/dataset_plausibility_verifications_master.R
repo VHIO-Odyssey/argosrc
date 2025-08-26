@@ -10,7 +10,7 @@ plausibility_verifications_master <-
   dplyr::select(
     id, version, description,complexity,
     arguments_metadata, candidates_mapping,
-    comments,
+    comments
   )
 
 

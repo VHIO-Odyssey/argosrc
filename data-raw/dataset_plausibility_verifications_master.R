@@ -1,8 +1,8 @@
 
-
-
 plausibility_verifications_master <-
-  readr::read_csv2(here::here("data-raw", "plausibility_verifications_master.csv")) |>
+  readr::read_csv2(
+    here::here("data-raw", "plausibility_verifications_master.csv")
+  ) |>
   dplyr::mutate(
     arguments_metadata = purrr::map(arguments, create_arguments_metadata),
     candidates_mapping = purrr::map(candidate_fields, create_candidates_mapping)

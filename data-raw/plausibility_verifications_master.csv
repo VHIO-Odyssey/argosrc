@@ -6,12 +6,13 @@ date1 = 'sae_onset_high_severity_date', date2 = 'sae_stop_date'
 date1 = 'medhis_start_date', date2 = 'medhis_end_date'
 date1 = 'prev_qt_startdate', date2 = 'prev_qt_enddate'
 date1 = 'pt_first_date', date2 = 'pt_last_date'
-date1 = 'ic_date', date2 = 'ic_date_reconsent'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.
+date1 = 'ic_date', date2 = 'ic_date_reconsent'
+date1 = 'data_inici', date2 = 'data_final'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.
 verif_2;1;The period between the two given dates falls within a defined range.;interform;"date1::ic_date::seronco1
 date2::ic_date::seronco1
 min_period
 max_period
 unit";date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100, unit = 'years';The period of time is defined from date1 to date2. Make sure date1 is the expected earlier date.
 verif_3;1;The variable's value matches the expected value.;intraform;"var_name::incl_1::seronco1
-expected";"var_name = 'incl_\\d', expected = 'Yes'
-var_name = 'excl_\\d', expected = 'No'";This verification accepts pattern names.
+expected";"var_name = 'incl_\\d+', expected = 'Yes'
+var_name = 'excl_\\d+', expected = 'No'";This verification accepts pattern names.

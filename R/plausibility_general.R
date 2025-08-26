@@ -2,29 +2,13 @@
 
 
 # Internal helper to filter issues from the verified data and glue the issue text
-filter_issues <- function(verified_data, issue_text = NULL) {
+filter_issues <- function(verified_data, issue_text) {
 
-  filtered_data <-
-    verified_data |>
-    dplyr::filter(!.data$.ok | is.na(.data$.ok))
-
-  if (is.null(issue_text)) {
-
-    filtered_data_issue <-
-      filtered_data |>
-      dplyr::mutate(issue = issue_text)
-
-  } else {
-
-    filtered_data_issue <-
-      filtered_data |>
-      dplyr::mutate(
-        issue = glue::glue(issue_text, .open = "<<", .close = ">>")
-      )
-
-  }
-
-  filtered_data_issue |>
+  verified_data |>
+    dplyr::filter(!.data$.ok | is.na(.data$.ok)) |>
+    dplyr::mutate(
+      issue = glue::glue(issue_text, .open = "<<", .close = ">>")
+    ) |>
     dplyr::select(
       1,
       dplyr::any_of(c(
@@ -389,8 +373,10 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
       issues = purrr::map2(
         verif_fn, verif_arg,
         ~ do.call(.x, c(.y, rc_data = rc_data_expr))
-      )
-    )
+      ),
+      n_issues = purrr::map_int(issues, nrow)
+    ) |>
+    dplyr::relocate(n_issues, .before = "issues")
 
   if (nrow(detected_verifications_undefined) > 0) {
 

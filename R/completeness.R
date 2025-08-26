@@ -358,7 +358,7 @@ argos_check_completeness <- function(
 #'
 #' @return A list of tibbles, each containing counts of completed forms per record for a specific event.
 #' @export
-argos_count_forms <- function(rc_data, save_path = NULL, mark_0 = TRUE) {
+argos_count_forms <- function(rc_data, save_path = NULL) {
 
   id_var <- attr(rc_data, "id_var")
   subjects <- attr(rc_data, "subjects")
@@ -468,7 +468,9 @@ argos_count_forms <- function(rc_data, save_path = NULL, mark_0 = TRUE) {
     purrr::set_names(events_dict[events])
 
   wb <- openxlsx::createWorkbook()
-  bg_style <- openxlsx::createStyle(fgFill = "#D3D3D3")
+  bg_style_0 <- openxlsx::createStyle(fgFill = "#D3D3D3")
+  bg_style <- openxlsx::createStyle(fgFill = "#ADD8E6")
+
 
   purrr::walk2(
     form_count_list,
@@ -479,20 +481,32 @@ argos_count_forms <- function(rc_data, save_path = NULL, mark_0 = TRUE) {
         wb, sheet = form_name,
         form_tbl, tableStyle = "TableStyleLight9"
       )
+      openxlsx::freezePane(wb, sheet = form_name, firstActiveRow = NULL, firstActiveCol = 2)
 
-      if (mark_0) {
-        zero_cells <- which(form_tbl[-1] == 0, arr.ind = TRUE)
-        if (nrow(zero_cells) > 0) {
-          rows <- zero_cells[, 1] + 1
-          cols <- zero_cells[, 2] + 1
 
-          openxlsx::addStyle(
-            wb, sheet = form_name,
-            style = bg_style,
-            rows = rows, cols = cols,
-            gridExpand = FALSE, stack = TRUE
-          )
-        }
+      zero_cells <- which(form_tbl[-1] == 0, arr.ind = TRUE)
+      if (nrow(zero_cells) > 0) {
+        rows <- zero_cells[, 1] + 1
+        cols <- zero_cells[, 2] + 1
+
+        openxlsx::addStyle(
+          wb, sheet = form_name,
+          style = bg_style_0,
+          rows = rows, cols = cols,
+          gridExpand = FALSE, stack = TRUE
+        )
+      }
+      non_zero_cells <- which(form_tbl[-1] > 0, arr.ind = TRUE)
+      if (nrow(non_zero_cells) > 0) {
+        rows <- non_zero_cells[, 1] + 1
+        cols <- non_zero_cells[, 2] + 1
+
+        openxlsx::addStyle(
+          wb, sheet = form_name,
+          style = bg_style,
+          rows = rows, cols = cols,
+          gridExpand = FALSE, stack = TRUE
+        )
       }
     }
   )

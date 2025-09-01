@@ -33,7 +33,8 @@ find_valid_candidates <- function(
   # quedarse con los asi definidos y extraer las constantes.
   redcap_fields <- arguments_metadata |>
     dplyr::filter(.data[["argument_type"]] == "redcap_field") |>
-    dplyr::pull(argument)
+    dplyr::pull(argument) |>
+    unique()
 
   candidates_list <-
     purrr::map(
@@ -147,10 +148,15 @@ find_valid_candidates <- function(
     )
 
 
-
-
   valid_candidates_index <-
-    purrr::map_lgl(present_candidates_match, ~all(.$field_match))
+    purrr::map_lgl(
+      present_candidates_match,
+      ~ . |>
+        dplyr::group_by(.data$argument) |>
+        dplyr::summarise(arg_ok = any(.data$field_match)) |>
+        dplyr::summarise(args_ok = all(.data$arg_ok)) |>
+        dplyr::pull(args_ok)
+      )
 
   valid_candidates <- present_candidates[valid_candidates_index]
 

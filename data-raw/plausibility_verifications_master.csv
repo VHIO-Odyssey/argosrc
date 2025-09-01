@@ -9,6 +9,7 @@ date1 = 'pt_first_date', date2 = 'pt_last_date'
 date1 = 'ic_date', date2 = 'ic_date_reconsent'
 date1 = 'data_inici', date2 = 'data_final'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.
 verif_2;1;The period between the two given dates falls within a defined range.;interform;"date1::ic_date::seronco1
+date1::dob::brave
 date2::ic_date::seronco1
 min_period
 max_period

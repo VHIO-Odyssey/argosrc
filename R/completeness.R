@@ -405,11 +405,11 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
 
   if (is.null(events)) {
 
-    events <- attr(rc_data, "project_info")$project_title
+    events <- NA_character_
 
     forms_events_mapping <-
       tibble::tibble(
-      unique_event_name = attr(rc_data, "project_info")$project_title,
+      unique_event_name = NA_character_,
       form = forms
     )
 
@@ -422,7 +422,7 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
 
       if (!any(names(form_data) == "redcap_event_name")) {
 
-        form_data$redcap_event_name <- attr(rc_data, "project_info")$project_title
+        form_data$redcap_event_name <- NA_character_
 
       }
 

@@ -93,28 +93,6 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
 
   conditions_list
 
-  # Legado de odytools. Desactivado mientras se piensa sobre una gestíon más global.
-  # We need to check if the conditions are actually filterable since variables
-  # outside the data_frame can be used in the conditions. This is not suported
-  # by the current implementation because ody_verify_completeness (the function
-  # in charge of checking the conditions) only checks for the conditional presence
-  # of variables in the current data_frame.
-
-  # secure_filter_conditions <- purrr::possibly(filter_condition)
-  #
-  # ok_index <- purrr::map_lgl(
-  #   conditions_list,
-  #   ~ secure_filter_conditions(data_frame, .) |>
-  #     is.data.frame()
-  # )
-  #
-  # if (sum(ok_index) < length(conditions_list)) {
-  #   warning(
-  #     "Some conditions are not filterable because they use variables not present in the data frame. These conditions will be ignored."
-  #   )
-  # }
-  #
-  # conditions_list[ok_index]
 
 }
 
@@ -196,6 +174,51 @@ verify_completeness_form <- function(
       } else {
         na_fn <- is.na
       }
+
+
+      # Hay que añadir variables externas al formulario si así lo requiere el
+      # branching logic
+      cond_variables <- stringr::str_extract_all(
+        as.character(current_condition),
+        stringr::str_c(attr(redcap_data, "metadata")$field_name, collapse = "|")
+      ) |>
+        unlist() |>
+        unique()
+
+      extra_form_variables <- cond_variables[!cond_variables %in% names(current_form)]
+
+      if (length(extra_form_variables) > 0) {
+
+        extra_form_list <- odytools::ody_rc_select(redcap_data, !!extra_form_variables)
+
+        if (is.data.frame(extra_form_list)) extra_form_list <- list(extra_form_list)
+
+        all_extra_is_unique <-
+          purrr::map_lgl(extra_form_list, ~ all(is.na(.$redcap_instance_number))) |>
+          all()
+
+        if (all_extra_is_unique) {
+
+          extra_variables_info <-
+            purrr::map(
+              extra_form_list,
+              ~ dplyr::select(
+                ., -"redcap_form_name", -"redcap_instance_type", -"redcap_instance_number"
+              )
+            ) |>
+            purrr::reduce(dplyr::full_join)
+
+          current_form <-
+            dplyr::left_join(
+              current_form, extra_variables_info,
+              by = attr(rc_data, "id_var")
+            )
+
+        }
+
+      }
+
+
 
       if (check_for %in% c("missing", "both")) {
 

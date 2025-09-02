@@ -100,3 +100,66 @@ verif_4_1 <- function(rc_data, var_name) {
 
 }
 
+
+verif_5_1 <- function(
+    rc_data,
+    target_response,
+    no_target_response,
+    new_lesions,
+    overall_response) {
+
+  odytools::ody_rc_select(
+    rc_data,
+    !!target_response,
+    !!no_target_response,
+    !!new_lesions,
+    !!overall_response
+  ) |>
+    odytools::ody_rc_format() |>
+    dplyr::mutate(
+      .ok = dplyr::case_when(
+        .data[[target_response]] == "Complete Response (CR)" &
+          .data[[no_target_response]] == "Complete Response (CR)" &
+          .data[[new_lesions]] == "No" &
+          .data[[overall_response]] == "Complete Response (CR)" ~ TRUE,
+        .data[[target_response]] == "Complete Response (CR)" &
+          .data[[no_target_response]] == "Non-CR/Non-PD" &
+          .data[[new_lesions]] == "No" &
+          .data[[overall_response]] == "Partial Response (PR)" ~ TRUE,
+        .data[[target_response]] == "Complete Response (CR)" &
+          is.na(.data[[no_target_response]]) &
+          .data[[new_lesions]] == "No" &
+          .data[[overall_response]] == "Partial Response (PR)" ~ TRUE,
+        .data[[target_response]] == "Partial response (PR)" &
+          (.data[[no_target_response]] != "Progressive Disease (PD)" |
+             is.na(.data[[no_target_response]])) &
+          .data[[new_lesions]] == "No" &
+          .data[[overall_response]] == "Partial Response (PR)" ~ TRUE,
+        .data[[target_response]] == "Stable disease (SD)" &
+          (.data[[no_target_response]] != "Progressive Disease (PD)" |
+             is.na(.data[[no_target_response]])) &
+          .data[[new_lesions]] == "No" &
+          .data[[overall_response]] == "Stable Disease (SD)" ~ TRUE,
+        (.data[[target_response]] == "Not evaluable" |
+           is.na(.data[[target_response]])) &
+          (.data[[no_target_response]] == "Non-CR/Non-PD" |
+             is.na(.data[[no_target_response]])) &
+          .data[[new_lesions]] == "No" &
+          is.na(.data[[overall_response]]) ~ TRUE,
+        .data[[target_response]] == "Progressive disease (PD)" &
+          .data[[overall_response]] == "Progressive Disease (PD)" ~ TRUE,
+        .data[[no_target_response]] == "Progressive Disease (PD)" &
+          .data[[overall_response]] == "Progressive Disease (PD)" ~ TRUE,
+        .data[[new_lesions]] == "Yes" &
+          .data[[overall_response]] == "Progressive Disease (PD)" ~ TRUE,
+        .default = FALSE
+      )
+    ) |>
+    filter_issues(
+      issue_text = glue::glue(
+        "Unexpected {overall_response} = <<{overall_response}>> according to {target_response} = <<{target_response}>> , {no_target_response} = <<{no_target_response}>> and {new_lesions} = <<{new_lesions}>>."
+      )
+    )
+
+}
+

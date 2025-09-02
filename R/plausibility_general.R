@@ -140,7 +140,7 @@ find_valid_candidates <- function(
           ),
           no_need_match = field_type == "NA",
           type_ok = field_type_cand == field_type,
-          choices_ok = field_choices_cand == field_choices,
+          choices_ok = stringr::str_remove_all(field_choices_cand, " ") == stringr::str_remove_all(field_choices, " "),
           validation_ok = field_validation_cand == field_validation,
           field_match = no_need_match | (type_ok & choices_ok & validation_ok)
         )|>

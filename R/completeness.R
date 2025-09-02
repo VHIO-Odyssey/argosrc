@@ -45,6 +45,8 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
           stringr::str_replace_all(
             .data$branching_logic, "event-name", "redcap_event_name"
           ) |>
+          # Ensure all values are beteen ' and not "
+          stringr::str_replace_all("\"", "'") |>
           # Any upper case AND / OR is lower cased to avoid motential confusion with
           # the missing data codes.
           stringr::str_replace_all(" AND ", " and ") |>
@@ -149,10 +151,22 @@ verify_completeness_form <- function(
 
   }
 
+  if (!any(names(current_form) == "redcap_event_name")) {
+
+    current_form <-
+      current_form |>
+      dplyr::mutate(
+        redcap_event_name = NA_character_,
+        .before = "redcap_form_name"
+      )
+
+  }
+
+
   current_variables_name <-
     current_form |>
     dplyr::select(
-      -all_of(id_var),
+      -tidyselect::all_of(id_var),
       -"redcap_event_name",
       -"redcap_form_name",
       -"redcap_instance_type",

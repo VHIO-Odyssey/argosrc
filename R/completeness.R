@@ -403,10 +403,29 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
   events <- attr(rc_data, "events")$unique_event_name
   forms_events_mapping <- attr(rc_data, "forms_events_mapping")
 
+  if (is.null(events)) {
+
+    events <- attr(rc_data, "project_info")$project_title
+
+    forms_events_mapping <-
+      tibble::tibble(
+      unique_event_name = attr(rc_data, "project_info")$project_title,
+      form = forms
+    )
+
+  }
+
   form_count_raw <- purrr::map(
     forms,
     function(form) {
       form_data <- odytools::ody_rc_select_form(rc_data, !!form)
+
+      if (!any(names(form_data) == "redcap_event_name")) {
+
+        form_data$redcap_event_name <- attr(rc_data, "project_info")$project_title
+
+      }
+
 
       if (nrow(form_data) == 0) {
 
@@ -472,6 +491,16 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
 
 
   events_attr <- attr(rc_data, "events")
+
+  if (is.null(events_attr)) {
+
+    events_attr <- tibble::tibble(
+      arm_num = 1,
+      event_name = attr(rc_data, "project_info")$project_title,
+      unique_event_name = attr(rc_data, "project_info")$project_title
+    )
+
+  }
   # If there is more than one arm, append the arm number to the event name
   if (length(unique(events_attr$arm_num)) > 1) {
 

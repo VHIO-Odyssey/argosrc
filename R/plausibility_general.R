@@ -66,25 +66,26 @@ find_valid_candidates <- function(
 
   if (length(present_candidates) == 0) return(NA)
 
-  # Number of diferent forms where the present candidates belong to
-  n_distinct_forms <-
-    purrr::map_int(
+  # Forms where the present candidates belong to
+  distinct_forms <-
+    purrr::map(
       present_candidates,
       ~ dplyr::filter(
         metadata,
         stringr::str_detect(
           .data$field_name,
           stringr::str_c("^", ., "$") |> stringr::str_c(collapse = "|")
-          )
-        ) |>
+        )
+      ) |>
         dplyr::select(form_name) |>
         unique() |>
-        nrow()
+        unlist()
     )
+  n_distinct_forms <- purrr::map_int(distinct_forms, length)
 
   # If intraform complexity, we make sure all variables from the same set belong to
   # the same form
-  if (complexity == "intraform") {
+  if (stringr::str_detect(complexity, "intraform")) {
 
     present_candidates <- present_candidates[n_distinct_forms == 1]
 
@@ -94,13 +95,43 @@ find_valid_candidates <- function(
 
   # If interform complexity, we make sure at least two variables from the same set
   # belong to different forms.
-  if (complexity == "interform") {
+  if (stringr::str_detect(complexity, "interform")) {
 
     present_candidates <- present_candidates[n_distinct_forms > 1]
 
     if (length(present_candidates) == 0) return(NA)
 
   }
+
+  if (stringr::str_detect(complexity, "multiinstance")) {
+
+    forms_events_mapping <- attr(redcap_data, "forms_events_mapping")
+    repeating <- attr(redcap_data, "repeating")
+
+    repeating_forms <- na.omit(repeating$form_name) |> unique()
+    repeating_events <- repeating |>
+      dplyr::filter(is.na(.data$form_name)) |>
+      dplyr::pull(event_name) |>
+      unique()
+
+    repeating_forms_event <- forms_events_mapping |>
+      dplyr::filter(unique_event_name %in% repeating_events) |>
+      dplyr::pull(form) |>
+      unique()
+
+
+    all_repeating_forms <- union(repeating_forms, repeating_forms_event)
+
+    is_repeating_form <- purrr::map_lgl(
+      distinct_forms, ~ any(. %in% all_repeating_forms)
+    )
+
+    present_candidates <- present_candidates[is_repeating_form]
+
+    if (length(present_candidates) == 0) return(NA)
+
+  }
+
 
   present_candidates_match <-
     purrr::map(

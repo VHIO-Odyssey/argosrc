@@ -203,19 +203,32 @@ verify_completeness_form <- function(
             purrr::map(
               extra_form_list,
               ~ dplyr::select(
-                ., -"redcap_form_name", -"redcap_instance_type", -"redcap_instance_number"
+                .,
+                -tidyselect::any_of(c(
+                  "redcap_event_name",
+                  "redcap_form_name",
+                  "redcap_instance_type",
+                  "redcap_instance_number"
+                ))
               )
             ) |>
             purrr::reduce(dplyr::full_join)
 
-          current_form <-
+          expanded_form <-
             dplyr::left_join(
               current_form, extra_variables_info,
               by = attr(rc_data, "id_var")
             )
 
+        } else {
+
+          expanded_form <- current_form
+
         }
 
+      } else {
+
+        expanded_form <- current_form
       }
 
 
@@ -223,7 +236,7 @@ verify_completeness_form <- function(
       if (check_for %in% c("missing", "both")) {
 
         missing_values <-
-          current_form |>
+          expanded_form |>
           # Safe version. If the filter fails (mainly because the variables
           # declared in current_condition do not belong to the current form) it
           # returns the original unfiltered form.
@@ -260,7 +273,7 @@ verify_completeness_form <- function(
       if (check_for %in% c("unexpected", "both")) {
 
         unexpected_values <-
-          current_form |>
+          expanded_form |>
           # Safe version. If the filter fails (mainly because the variables
           # declared in current_condition do not belong to the current form) it
           # returns the original unfiltered form.

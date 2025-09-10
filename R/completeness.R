@@ -24,7 +24,7 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
       dplyr::filter(
         stringr::str_detect(
           .data$branching_logic,
-          "\\[.+\\]\\[.+\\]|current-instance|user-role-name"
+          "current-instance|user-role-name"
         )
       ) |> dplyr::pull("field_name")
 
@@ -45,6 +45,9 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
           stringr::str_replace_all(
             .data$branching_logic, "event-name", "redcap_event_name"
           ) |>
+          # For external variables with structure [form_name][variable] the
+          # [form_name] is removed
+          stringr::str_replace("\\[[^\\[\\]]+\\](\\[[^\\[\\]]+\\])", "\\1") |>
           # Ensure all values are beteen ' and not "
           stringr::str_replace_all("\"", "'") |>
           # Any upper case AND / OR is lower cased to avoid motential confusion with

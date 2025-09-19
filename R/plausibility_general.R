@@ -375,7 +375,7 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
     dplyr::select(-"needs_constants") |>
     dplyr::mutate(
       n_issues = NA,
-      issues = NA
+      issues = NULL
     )
 
   # Se comprueba si los argumentos hacen referncia a patrones de nombre. Si así
@@ -415,9 +415,14 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
     dplyr::mutate(
       issues = purrr::map2(
         verif_fn, verif_arg,
-        ~ do.call(.x, c(.y, rc_data = rc_data_expr))
+        ~ tryCatch(
+          do.call(.x, c(.y, rc_data = rc_data_expr)),
+          error = function(e) NULL
+        )
       ),
-      n_issues = purrr::map_int(issues, nrow)
+      n_issues = purrr::map_int(
+        issues, ~ ifelse(is.null(.), NA_integer_, nrow(.))
+      )
     ) |>
     dplyr::relocate(n_issues, .before = "issues")
 

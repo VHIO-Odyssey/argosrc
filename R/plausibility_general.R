@@ -244,7 +244,7 @@ find_valid_candidates <- function(
 #'   be obtained with \code{odytools::ody_rc_import} and contain a "metadata"
 #'   attribute describing the data dictionary.
 #'
-#'
+#' @param constants_list Optional list of tibbles to provide additional constant values. Each tibble must include a `verif_fn` column indicating the verification function it applies to, along with other columns for arguments. Note that all arguments must be provided, regardless of whether they are constants or REDCap fields, in order to avoid potential ambiguity among candidate fields. These values will override any existing constants defined in the verification master.
 #'
 #' @return A tibble with columns:
 #' \describe{
@@ -263,7 +263,7 @@ find_valid_candidates <- function(
 #' collected.
 #'
 #' @export
-argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
+argos_check_plausibility <- function(rc_data, constants_list = NULL) {
 
   rc_data_expr <- rlang::enexpr(rc_data)
 
@@ -285,10 +285,10 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
     dplyr::select("verif_fn",  verif_arg = "valid_candidates", "description") |>
     tidyr::unnest("verif_arg")
 
-  if (!is.null(extra_mapping)) {
+  if (!is.null(constants_list)) {
 
     verif_extra_names <-
-      purrr::map_chr(extra_mapping, ~ dplyr::pull(., "verif_fn")) |>
+      purrr::map_chr(constants_list, ~ dplyr::pull(., "verif_fn")) |>
       unique()
 
     verif_extra_values <-
@@ -296,9 +296,9 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
         verif_extra_names,
         function(x) {
 
-          verif_index <- purrr::map_lgl(extra_mapping, ~ .$verif_fn == x)
+          verif_index <- purrr::map_lgl(constants_list, ~ .$verif_fn == x)
 
-          extra_mapping[verif_index] |>
+          constants_list[verif_index] |>
             purrr::list_rbind() |>
             dplyr::select(-"verif_fn")
 
@@ -315,7 +315,8 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
           dplyr::select("arguments_metadata") |>
           tidyr::unnest("arguments_metadata") |>
           dplyr::filter(.data[["argument_type"]] == "redcap_field") |>
-          dplyr::pull("argument")
+          dplyr::pull("argument") |>
+          unique()
       )
 
 
@@ -397,6 +398,7 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
     dplyr::filter(.data[["needs_constants"]]) |>
     dplyr::select(-"needs_constants") |>
     dplyr::mutate(
+      execution = "no const.",
       n_issues = NA
     )
 
@@ -446,11 +448,13 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
         issues, ~ ifelse(is.null(.), NA_integer_, nrow(.))
       )
     ) |>
-    dplyr::relocate(n_issues, .before = "issues")
+    dplyr::relocate(.data[["n_issues"]], .before = "issues") |>
+    dplyr::mutate(
+      execution = ifelse(is.na(.data[["n_issues"]]), "fail", "ok"),
+      .before = "n_issues"
+    )
 
   if (nrow(detected_verifications_undefined) > 0) {
-
-    warning("Some verifications were not executed because of missing argument definitions. Please provide these via the extra_mapping argument.")
 
     dplyr::bind_rows(
       detected_verifications_executed,

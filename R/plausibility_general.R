@@ -199,10 +199,31 @@ find_valid_candidates <- function(
   # Se añaden las constantes si las hubiere.
   if (any(arguments_metadata$argument_type == "constant")) {
 
-    purrr::map(
-      valid_candidates,
-      ~ dplyr::left_join(., candidates_mapping, by = redcap_fields)
-    )
+    constants <-
+      arguments_metadata |>
+      dplyr::filter(.data[["argument_type"]] == "constant") |>
+      dplyr::pull("argument") |>
+      unique() |>
+      purrr::map(~ tibble::tibble("{.}" := NA_character_)) |>
+      purrr::list_cbind()
+
+    # If the constants are defined in the mapping, they are added to the valid
+    # candidates. Otherwise NA constants are added.
+    if (all(names(constants) %in% names(candidates_mapping))) {
+
+      purrr::map(
+        valid_candidates,
+        ~ dplyr::left_join(., candidates_mapping, by = redcap_fields)
+      )
+
+    } else {
+
+      purrr::map(
+        valid_candidates,
+        ~ dplyr::bind_cols(., constants)
+      )
+
+    }
 
   } else {
 
@@ -222,6 +243,8 @@ find_valid_candidates <- function(
 #' @param rc_data A data frame representing the REDCap export data. It must
 #'   be obtained with \code{odytools::ody_rc_import} and contain a "metadata"
 #'   attribute describing the data dictionary.
+#'
+#'
 #'
 #' @return A tibble with columns:
 #' \describe{
@@ -374,8 +397,7 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
     dplyr::filter(.data[["needs_constants"]]) |>
     dplyr::select(-"needs_constants") |>
     dplyr::mutate(
-      n_issues = NA,
-      issues = NULL
+      n_issues = NA
     )
 
   # Se comprueba si los argumentos hacen referncia a patrones de nombre. Si así
@@ -432,7 +454,9 @@ argos_check_plausibility <- function(rc_data, extra_mapping = NULL) {
 
     dplyr::bind_rows(
       detected_verifications_executed,
-      detected_verifications_undefined
+      detected_verifications_undefined |>
+        # Arguments table is transformed to list of lists for consistency
+        dplyr::mutate(verif_arg = purrr::map(verif_arg, as.list))
     ) |>
       dplyr::arrange(.data[["verif_fn"]])
 

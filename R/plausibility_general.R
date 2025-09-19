@@ -103,6 +103,8 @@ find_valid_candidates <- function(
 
   }
 
+  # If multiinstance complexity, we make sure at least one variable from the set
+  # belongs to a repeating form.
   if (stringr::str_detect(complexity, "multiinstance")) {
 
     forms_events_mapping <- attr(redcap_data, "forms_events_mapping")

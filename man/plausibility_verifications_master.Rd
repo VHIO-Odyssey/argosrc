@@ -16,8 +16,9 @@ A data frame with variables:
     \describe{
       \item{intraform}{All involved variables come from the same form.}
       \item{interform}{Variables come from different forms.}
-      \item{interinstance}{The verification compares values of the same variable(s) from different instances.}
+      \item{multiinstance}{The verification involves variables from forms that have multiple instances.}
     }
+    Note than intra and interform are mutually exclusive, but multiinstance can be combined with either of them.
   }
   \item{arguments_metadata}{
     A table with information about the arguments. It has one row per argument and the following columns:

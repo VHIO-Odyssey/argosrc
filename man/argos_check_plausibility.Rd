@@ -4,7 +4,7 @@
 \alias{argos_check_plausibility}
 \title{Check Plausibility of REDCap Data}
 \usage{
-argos_check_plausibility(rc_data)
+argos_check_plausibility(rc_data, extra_mapping = NULL)
 }
 \arguments{
 \item{rc_data}{A data frame representing the REDCap export data. It must

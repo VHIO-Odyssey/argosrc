@@ -11,10 +11,6 @@ plausibility_verifications_master <-
     id, version, description,complexity,
     arguments_metadata, candidates_mapping,
     comments
-  ) |>
-  # TEMP ----
-  # Extract ongoing verifications
-  dplyr::filter(!(id == "verif_6" & version == 1))
-
+  )
 
 usethis::use_data(plausibility_verifications_master, overwrite = TRUE)

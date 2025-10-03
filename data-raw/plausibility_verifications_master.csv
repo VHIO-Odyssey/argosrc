@@ -28,4 +28,4 @@ overall_response::orr::ttd_20_04_ody";target_response = 'target_lesions_response
 verif_6;1;Last follow-up of an alive patient is within the expected schelude.;intraform_multiinstance;"last_fu_date::last_fu_date::brave
 last_fu_status::last_fu_status::brave
 time_limit
-unit";last_fu_date = 'last_fu_date', last_fu_status = 'last_fu_status';Only applies to the last instance
+unit";last_fu_date = 'last_fu_date', last_fu_status = 'last_fu_status';Only applies to the last instance. If there are 0 survival instances, the check does not apply.

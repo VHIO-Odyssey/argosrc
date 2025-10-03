@@ -118,6 +118,9 @@ verif_5_1 <- function(
     odytools::ody_rc_format() |>
     dplyr::mutate(
       .ok = dplyr::case_when(
+        # If the overall_response is NA, it is considered correct (this is a
+        # completeness matter).
+        is.na(.data[[overall_response]]) ~ TRUE,
         .data[[target_response]] == "Complete Response (CR)" &
           .data[[no_target_response]] == "Complete Response (CR)" &
           .data[[new_lesions]] == "No" &
@@ -160,6 +163,37 @@ verif_5_1 <- function(
         "Unexpected {overall_response} = <<{overall_response}>> according to {target_response} = <<{target_response}>> , {no_target_response} = <<{no_target_response}>> and {new_lesions} = <<{new_lesions}>>."
       )
     )
+
+}
+
+
+verif_6_1 <- function(rc_data, last_fu_date, last_fu_status, time_limit, unit) {
+
+  import_date <- attr(rc_data, "import_date") |> as.Date()
+
+  odytools::ody_rc_select(
+    rc_data, !!last_fu_date, !!last_fu_status, .accept_form_name = FALSE
+  ) |>
+    odytools::ody_rc_format() |>
+    # filter to ensure we only check the latest follow-up in a repetating form.
+    dplyr::filter(redcap_instance_type != "unique") |>
+    dplyr::mutate(
+      time_since_last_fu = lubridate::time_length(
+        import_date - .data[[last_fu_date]], unit = unit
+      ),
+      .ok = dplyr::case_when(
+        last_fu_status != "Alive" ~ TRUE,
+        time_since_last_fu <= as.numeric(time_limit) ~ TRUE,
+        .default = FALSE
+      )
+    ) |>
+    filter_issues(
+      issue_text = glue::glue(
+        "Last follow-up date (<<{last_fu_date}>>) is <<round(time_since_last_fu, 1)>> {unit} ago and status is 'Alive' (expected <= {time_limit} {unit})."
+      )
+    )
+
+
 
 }
 

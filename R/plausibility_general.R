@@ -398,7 +398,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     dplyr::filter(.data[["needs_constants"]]) |>
     dplyr::select(-"needs_constants") |>
     dplyr::mutate(
-      execution = "no const.",
+      execution = "missing constants",
       n_issues = NA
     )
 

@@ -50,11 +50,11 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
           stringr::str_replace("\\[[^\\[\\]]+\\](\\[[^\\[\\]]+\\])", "\\1") |>
           # Ensure all values are beteen ' and not "
           stringr::str_replace_all("\"", "'") |>
-          # Any upper case AND / OR is lower cased to avoid motential confusion with
-          # the missing data codes.
+          stringr::str_replace_all("\\n", " ") |>
+          # Any upper case AND / OR is lower cased to avoid potential confusion
+          # with the missing data codes.
           stringr::str_replace_all(" AND ", " and ") |>
           stringr::str_replace_all( " OR ", " or ") |>
-          stringr::str_replace_all("\\n", " ") |>
           stringr::str_replace_all(missing_value, "user_na") |>
           # Checkbox variables to especific check box column
           stringr::str_replace_all( "\\((\\d+)\\)", "___\\1") |>
@@ -215,7 +215,10 @@ verify_completeness_form <- function(
                 ))
               )
             ) |>
-            purrr::reduce(dplyr::full_join)
+            purrr::reduce(
+              dplyr::full_join,
+              by = attr(rc_data, "id_var")
+            )
 
           expanded_form <-
             dplyr::left_join(

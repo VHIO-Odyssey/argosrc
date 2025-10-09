@@ -348,9 +348,11 @@ argos_check_completeness <- function(
     forms = "All",
     user_na_is_data = TRUE,
     check_for = c("missing", "unexpected", "both"),
-    extra_conditions_list = NULL) {
+    extra_conditions_list = NULL,
+    format = c("raw", "friendly")) {
 
   check_for <- rlang::arg_match(check_for)
+  format <- rlang::arg_match(format)
 
   metadata <- attr(rc_data, "metadata")
   missing_data_codes <- attr(rc_data, "missing")
@@ -398,9 +400,44 @@ argos_check_completeness <- function(
 
   }
 
-  completeness_result
+  if (format == "raw") return(completeness_result)
+
+  field_label <- metadata |>
+    dplyr::select("field_name", "field_label")
+  form_names <- attr(redcap_data, "forms")
+  event_names <- attr(redcap_data, "events") |>
+    dplyr::select("event_name", "unique_event_name")
+
+  completeness_result |>
+    dplyr::left_join(field_label, by = c("variable" = "field_name")) |>
+    dplyr::relocate(.data$field_label, .after = variable) |>
+    dplyr::rename(field = .data$field_label) |>
+    dplyr::left_join(
+      form_names, by = c("redcap_form_name" = "instrument_name")
+    ) |>
+    dplyr::relocate(.data$instrument_label, .after = redcap_form_name) |>
+    dplyr::select(-"redcap_form_name") |>
+    dplyr::rename(form = .data$instrument_label) |>
+    dplyr::left_join(
+      event_names, by = c("redcap_event_name" = "unique_event_name")
+    ) |>
+    dplyr::relocate(.data$event_name, .after = redcap_event_name) |>
+    dplyr::select(-"redcap_event_name") |>
+    dplyr::rename(
+      event = .data$event_name,
+      form_instance = .data$redcap_instance_number
+    ) |>
+    dplyr::select(
+      "record_id", "event", "form", "form_instance",
+      "field", "completeness_issue",
+      tidyselect::any_of("missing_value")
+    ) |>
+    dplyr::rename_with(~ stringr::str_to_title(gsub("_", " ", .)))
+
+
 
 }
+
 
 
 #' Count form completions in REDCap data

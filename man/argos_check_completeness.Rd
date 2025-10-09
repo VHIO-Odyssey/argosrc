@@ -9,7 +9,8 @@ argos_check_completeness(
   forms = "All",
   user_na_is_data = TRUE,
   check_for = c("missing", "unexpected", "both"),
-  extra_conditions_list = NULL
+  extra_conditions_list = NULL,
+  format = c("raw", "friendly")
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ argos_check_completeness(
 }}
 
 \item{extra_conditions_list}{Optional list of additional conditions to consider.}
+
+\item{format}{Character, output format: `"raw"` returns raw results; `"friendly"` returns a more readable summary with labels and descriptive names.}
 }
 \value{
 A tibble summarizing missing data per variable and form.

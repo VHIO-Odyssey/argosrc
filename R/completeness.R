@@ -340,6 +340,7 @@ verify_completeness_form <- function(
 #'   \item{both}{Both missing and unexpected values.}
 #' }
 #' @param extra_conditions_list Optional list of additional conditions to consider.
+#' @param format Character, output format: `"raw"` returns raw results; `"friendly"` returns a more readable summary with labels and descriptive names.
 #'
 #' @return A tibble summarizing missing data per variable and form.
 #' @export

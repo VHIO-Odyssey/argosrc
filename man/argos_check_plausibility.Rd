@@ -4,12 +4,14 @@
 \alias{argos_check_plausibility}
 \title{Check Plausibility of REDCap Data}
 \usage{
-argos_check_plausibility(rc_data, extra_mapping = NULL)
+argos_check_plausibility(rc_data, constants_list = NULL)
 }
 \arguments{
 \item{rc_data}{A data frame representing the REDCap export data. It must
 be obtained with \code{odytools::ody_rc_import} and contain a "metadata"
 attribute describing the data dictionary.}
+
+\item{constants_list}{Optional list of tibbles to provide additional constant values. Each tibble must include a `verif_fn` column indicating the verification function it applies to, along with other columns for arguments. Note that all arguments must be provided, regardless of whether they are constants or REDCap fields, in order to avoid potential ambiguity among candidate fields. These values will override any existing constants defined in the verification master.}
 }
 \value{
 A tibble with columns:

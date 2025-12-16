@@ -156,6 +156,23 @@ verify_completeness_form <- function(
     ) |>
     names()
 
+  if (length(current_variables_name) == 0) {
+
+    empty_result <-
+      tibble::tibble(
+        "{id_var}" := NA_character_,
+        redcap_event_name = NA_character_,
+        redcap_form_name = NA_character_,
+        redcap_instance_type = NA_character_,
+        redcap_instance_number = NA_character_,
+        variable = NA_character_,
+        completeness_issue = NA_character_
+      ) |>
+      dplyr::filter(!is.na(variable))
+
+    return(empty_result)
+
+  }
 
   purrr::map(
     current_variables_name,

@@ -3,30 +3,29 @@
 # Helper function to check inside get_conditions_from_metadata whether the
 #  data_frame can be actually filtered by the elements of the conditions_list.
 filter_condition <- function(data_frame, condition) {
-
   data_frame |>
     dplyr::filter(eval(str2lang(condition)))
-
 }
 
 # Helper functions to create a conditions_list from redcap metadata.
 get_conditions_from_metadata <- function(metadata, missing_codes) {
-
   needed_meta <- metadata |>
     dplyr::filter(!is.na(.data$branching_logic))
 
   missing_value <- stringr::str_c(
-    missing_codes$raw_value, collapse = "|")
+    missing_codes$raw_value,
+    collapse = "|"
+  )
 
   if (nrow(needed_meta) > 0) {
-
     external_branching <- needed_meta |>
       dplyr::filter(
         stringr::str_detect(
           .data$branching_logic,
           "current-instance|user-role-name"
         )
-      ) |> dplyr::pull("field_name")
+      ) |>
+      dplyr::pull("field_name")
 
     if (length(external_branching) > 0) {
       warning(
@@ -41,10 +40,11 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
       dplyr::select("field_name", "branching_logic") |>
       dplyr::mutate(
         # RedCap logic is translated into R languaje
-        r_branch =
-          stringr::str_replace_all(
-            .data$branching_logic, "event-name", "redcap_event_name"
-          ) |>
+        r_branch = stringr::str_replace_all(
+          .data$branching_logic,
+          "event-name",
+          "redcap_event_name"
+        ) |>
           # For external variables with structure [form_name][variable] the
           # [form_name] is removed
           stringr::str_replace("\\[[^\\[\\]]+\\](\\[[^\\[\\]]+\\])", "\\1") |>
@@ -54,10 +54,13 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
           # Any upper case AND / OR is lower cased to avoid potential confusion
           # with the missing data codes.
           stringr::str_replace_all(" AND ", " and ") |>
-          stringr::str_replace_all( " OR ", " or ") |>
+          stringr::str_replace_all(" OR ", " or ") |>
           stringr::str_replace_all(missing_value, "user_na") |>
           # Checkbox variables to especific check box column
-          stringr::str_replace_all( "\\((\\d+)\\)", "___\\1") |>
+          stringr::str_replace_all(
+            "(\\[[^\\]\\[\\(\\)]+)\\(([^\\]\\[\\(\\)]+)\\)\\]",
+            "\\1___\\2]"
+          ) |>
           stringr::str_replace_all(
             # RedCap empty to regular R na
             "\\[([^\\[]+)\\] *<> *['\"]{2}",
@@ -75,9 +78,23 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
           stringr::str_replace_all(" or ", " | ") |>
           stringr::str_replace_all(" and ", " & ") |>
           # Delete possible duplicates of is_user_na
-          stringr::str_replace_all("(.*labelled::is_user_na.+)\\1+", "\\1"),
+          stringr::str_replace_all("(.*labelled::is_user_na.+)\\1+", "\\1") |>
+          # RedCap checkbox checked to R TRUE
+          stringr::str_replace_all(
+            "(___[^=]+== *)'1'",
+            "\\1TRUE"
+          ) |>
+          # RedCap checkbox unchecked to R FALSE
+          stringr::str_replace_all(
+            "(___[^=]+== *)''",
+            "\\1FALSE"
+          ),
         cond = stringr::str_c(
-          .data$field_name, " = ", "\"", .data$r_branch, "\""
+          .data$field_name,
+          " = ",
+          "\"",
+          .data$r_branch,
+          "\""
         )
       ) |>
       dplyr::pull("cond")
@@ -86,36 +103,32 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
       "list(",
       stringr::str_c(pre_list, collapse = ", "),
       ")"
-    ) |> str2lang() |> eval()
-
+    ) |>
+      str2lang() |>
+      eval()
   } else {
-
     conditions_list <- NULL
-
   }
 
   conditions_list
-
-
 }
 
 verify_completeness_form <- function(
-    rc_data,
-    current_form_name,
-    conditions_list,
-    user_na_is_data,
-    missing_data_codes,
-    check_for
+  rc_data,
+  current_form_name,
+  conditions_list,
+  user_na_is_data,
+  missing_data_codes,
+  check_for
 ) {
-
   id_var <- attr(rc_data, "id_var")
 
   current_form <- odytools::ody_rc_select_form(
-    rc_data, !!current_form_name
+    rc_data,
+    !!current_form_name
   )
 
   if (nrow(current_form) == 0) {
-
     empty_result <-
       tibble::tibble(
         "{id_var}" := NA_character_,
@@ -129,20 +142,16 @@ verify_completeness_form <- function(
       dplyr::filter(!is.na(variable))
 
     return(empty_result)
-
   }
 
   if (!any(names(current_form) == "redcap_event_name")) {
-
     current_form <-
       current_form |>
       dplyr::mutate(
         redcap_event_name = NA_character_,
         .before = "redcap_form_name"
       )
-
   }
-
 
   current_variables_name <-
     current_form |>
@@ -157,7 +166,6 @@ verify_completeness_form <- function(
     names()
 
   if (length(current_variables_name) == 0) {
-
     empty_result <-
       tibble::tibble(
         "{id_var}" := NA_character_,
@@ -171,13 +179,11 @@ verify_completeness_form <- function(
       dplyr::filter(!is.na(variable))
 
     return(empty_result)
-
   }
 
   purrr::map(
     current_variables_name,
     function(x) {
-
       current_variable <- str2lang(x)
       current_condition_raw <- conditions_list[[current_variable]]
 
@@ -195,7 +201,6 @@ verify_completeness_form <- function(
         na_fn <- is.na
       }
 
-
       # Hay que añadir variables externas al formulario si así lo requiere el
       # branching logic
       cond_variables <- stringr::str_extract_all(
@@ -205,20 +210,28 @@ verify_completeness_form <- function(
         unlist() |>
         unique()
 
-      extra_form_variables <- cond_variables[!cond_variables %in% names(current_form)]
+      extra_form_variables <- cond_variables[
+        !cond_variables %in% names(current_form)
+      ]
 
       if (length(extra_form_variables) > 0) {
+        extra_form_list <- odytools::ody_rc_select(
+          redcap_data,
+          !!extra_form_variables
+        )
 
-        extra_form_list <- odytools::ody_rc_select(redcap_data, !!extra_form_variables)
-
-        if (is.data.frame(extra_form_list)) extra_form_list <- list(extra_form_list)
+        if (is.data.frame(extra_form_list)) {
+          extra_form_list <- list(extra_form_list)
+        }
 
         all_extra_is_unique <-
-          purrr::map_lgl(extra_form_list, ~ all(is.na(.$redcap_instance_number))) |>
+          purrr::map_lgl(
+            extra_form_list,
+            ~ all(is.na(.$redcap_instance_number))
+          ) |>
           all()
 
         if (all_extra_is_unique) {
-
           extra_variables_info <-
             purrr::map(
               extra_form_list,
@@ -239,25 +252,18 @@ verify_completeness_form <- function(
 
           expanded_form <-
             dplyr::left_join(
-              current_form, extra_variables_info,
+              current_form,
+              extra_variables_info,
               by = attr(rc_data, "id_var")
             )
-
         } else {
-
           expanded_form <- current_form
-
         }
-
       } else {
-
         expanded_form <- current_form
       }
 
-
-
       if (check_for %in% c("missing", "both")) {
-
         missing_values <-
           expanded_form |>
           # Safe version. If the filter fails (mainly because the variables
@@ -274,7 +280,9 @@ verify_completeness_form <- function(
             ),
             missing_value = dplyr::case_when(
               labelled::is_regular_na(!!current_variable) ~ NA_character_,
-              labelled::is_user_na(!!current_variable) ~ as.character(!!current_variable)
+              labelled::is_user_na(!!current_variable) ~ as.character(
+                !!current_variable
+              )
             )
           ) |>
           dplyr::select(
@@ -290,11 +298,11 @@ verify_completeness_form <- function(
             "completeness_issue",
             "missing_value"
           )
-
-      } else {missing_values <- NULL}
+      } else {
+        missing_values <- NULL
+      }
 
       if (check_for %in% c("unexpected", "both")) {
-
         unexpected_values <-
           expanded_form |>
           # Safe version. If the filter fails (mainly because the variables
@@ -321,11 +329,11 @@ verify_completeness_form <- function(
             "completeness_issue",
             "missing_value"
           )
-
-      } else {unexpected_values <- NULL}
+      } else {
+        unexpected_values <- NULL
+      }
 
       dplyr::bind_rows(missing_values, unexpected_values)
-
     }
   ) |>
     purrr::list_rbind() |>
@@ -337,7 +345,6 @@ verify_completeness_form <- function(
       missing_value = label
     ) |>
     dplyr::select(-"label")
-
 }
 
 
@@ -362,24 +369,24 @@ verify_completeness_form <- function(
 #' @return A tibble summarizing missing data per variable and form.
 #' @export
 argos_check_completeness <- function(
-    rc_data,
-    forms = "All",
-    user_na_is_data = TRUE,
-    check_for = c("missing", "unexpected", "both"),
-    extra_conditions_list = NULL,
-    format = c("raw", "friendly")) {
-
+  rc_data,
+  forms = "All",
+  user_na_is_data = TRUE,
+  check_for = c("missing", "unexpected", "both"),
+  extra_conditions_list = NULL,
+  format = c("raw", "friendly")
+) {
   check_for <- rlang::arg_match(check_for)
   format <- rlang::arg_match(format)
 
   metadata <- attr(rc_data, "metadata")
   missing_data_codes <- attr(rc_data, "missing")
   conditions_list <- get_conditions_from_metadata(
-    metadata, missing_data_codes
+    metadata,
+    missing_data_codes
   )
 
   if (!is.null(extra_conditions_list)) {
-
     conditions_list <-
       # If any variable in extra_conditions_list is already defined by
       # the default branching logic, it is removed so the new will conditions
@@ -388,10 +395,11 @@ argos_check_completeness <- function(
         !names(conditions_list) %in% names(extra_conditions_list)
       ] |>
       c(extra_conditions_list)
-
   }
 
-  if (any(forms == "All")) forms <- attr(rc_data, "forms")$instrument_name
+  if (any(forms == "All")) {
+    forms <- attr(rc_data, "forms")$instrument_name
+  }
 
   completeness_result <-
     purrr::map(
@@ -411,14 +419,14 @@ argos_check_completeness <- function(
     dplyr::arrange(.data[[attr(rc_data, "id_var")]])
 
   if (all(is.na(completeness_result$missing_value))) {
-
     completeness_result <-
       completeness_result |>
       dplyr::select(-"missing_value")
-
   }
 
-  if (format == "raw") return(completeness_result)
+  if (format == "raw") {
+    return(completeness_result)
+  }
 
   field_label <- metadata |>
     dplyr::select("field_name", "field_label")
@@ -431,13 +439,15 @@ argos_check_completeness <- function(
     dplyr::relocate(.data$field_label, .after = variable) |>
     dplyr::rename(field = .data$field_label) |>
     dplyr::left_join(
-      form_names, by = c("redcap_form_name" = "instrument_name")
+      form_names,
+      by = c("redcap_form_name" = "instrument_name")
     ) |>
     dplyr::relocate(.data$instrument_label, .after = redcap_form_name) |>
     dplyr::select(-"redcap_form_name") |>
     dplyr::rename(form = .data$instrument_label) |>
     dplyr::left_join(
-      event_names, by = c("redcap_event_name" = "unique_event_name")
+      event_names,
+      by = c("redcap_event_name" = "unique_event_name")
     ) |>
     dplyr::relocate(.data$event_name, .after = redcap_event_name) |>
     dplyr::select(-"redcap_event_name") |>
@@ -446,16 +456,16 @@ argos_check_completeness <- function(
       form_instance = .data$redcap_instance_number
     ) |>
     dplyr::select(
-      "record_id", "event", "form", "form_instance",
-      "field", "completeness_issue",
+      "record_id",
+      "event",
+      "form",
+      "form_instance",
+      "field",
+      "completeness_issue",
       tidyselect::any_of("missing_value")
     ) |>
     dplyr::rename_with(~ stringr::str_to_title(gsub("_", " ", .)))
-
-
-
 }
-
 
 
 #' Count form completions in REDCap data
@@ -470,7 +480,6 @@ argos_check_completeness <- function(
 #' @return A list of tibbles, each containing counts of completed forms per record for a specific event.
 #' @export
 argos_count_forms <- function(rc_data, save_path = NULL) {
-
   id_var <- attr(rc_data, "id_var")
   subjects <- attr(rc_data, "subjects")
   forms <- attr(rc_data, "forms")$instrument_name
@@ -478,15 +487,13 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
   forms_events_mapping <- attr(rc_data, "forms_events_mapping")
 
   if (is.null(events)) {
-
     events <- NA_character_
 
     forms_events_mapping <-
       tibble::tibble(
-      unique_event_name = NA_character_,
-      form = forms
-    )
-
+        unique_event_name = NA_character_,
+        form = forms
+      )
   }
 
   form_count_raw <- purrr::map(
@@ -495,14 +502,10 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
       form_data <- odytools::ody_rc_select_form(rc_data, !!form)
 
       if (!any(names(form_data) == "redcap_event_name")) {
-
         form_data$redcap_event_name <- NA_character_
-
       }
 
-
       if (nrow(form_data) == 0) {
-
         forms_count <- tibble::tibble(
           "{id_var}" := NA_character_,
           redcap_event_name = NA_character_,
@@ -510,17 +513,14 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
           n = NA_integer_
         ) |>
           dplyr::filter(!is.na(.data[[id_var]]))
-
       } else {
-
-      forms_count <-
-        form_data |>
-        dplyr::count(.data[[id_var]], .data[["redcap_event_name"]]) |>
-        dplyr::mutate(
-          redcap_form_name = form,
-          .before = n
-        )
-
+        forms_count <-
+          form_data |>
+          dplyr::count(.data[[id_var]], .data[["redcap_event_name"]]) |>
+          dplyr::mutate(
+            redcap_form_name = form,
+            .before = n
+          )
       }
 
       expected_events <-
@@ -536,54 +536,52 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
         )
 
       dplyr::full_join(
-        forms_count, expected_structure,
+        forms_count,
+        expected_structure,
         by = c(id_var, "redcap_event_name", "redcap_form_name")
       ) |>
         dplyr::mutate(
           n = tidyr::replace_na(n, 0)
         ) |>
         dplyr::arrange(.data[[id_var]])
-
     }
   ) |>
     purrr::list_rbind() |>
     dplyr::mutate(
       redcap_event_name = factor(
-        redcap_event_name, levels = events
+        redcap_event_name,
+        levels = events
       ),
       redcap_form_name = factor(
-        redcap_form_name, levels = forms
+        redcap_form_name,
+        levels = forms
       )
     ) |>
     dplyr::arrange(redcap_event_name)
 
-  if (is.null(save_path)) return(form_count_raw)
-
+  if (is.null(save_path)) {
+    return(form_count_raw)
+  }
 
   forms_dict <- attr(rc_data, "forms")$instrument_label |>
     purrr::set_names(forms)
 
-
   events_attr <- attr(rc_data, "events")
 
   if (is.null(events_attr)) {
-
     events_attr <- tibble::tibble(
       arm_num = 1,
       event_name = attr(rc_data, "project_info")$project_title,
       unique_event_name = attr(rc_data, "project_info")$project_title
     )
-
   }
   # If there is more than one arm, append the arm number to the event name
   if (length(unique(events_attr$arm_num)) > 1) {
-
     events_attr <-
       events_attr |>
       dplyr::mutate(
         event_name = stringr::str_c(event_name, " (Arm ", arm_num, ")")
       )
-
   }
 
   events_dict <- events_attr$event_name |>
@@ -611,18 +609,23 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
   bg_style_0 <- openxlsx::createStyle(fgFill = "#D3D3D3")
   bg_style <- openxlsx::createStyle(fgFill = "#ADD8E6")
 
-
   purrr::walk2(
     form_count_list,
     names(form_count_list),
     function(form_tbl, form_name) {
       openxlsx::addWorksheet(wb, form_name)
       openxlsx::writeDataTable(
-        wb, sheet = form_name,
-        form_tbl, tableStyle = "TableStyleLight9"
+        wb,
+        sheet = form_name,
+        form_tbl,
+        tableStyle = "TableStyleLight9"
       )
-      openxlsx::freezePane(wb, sheet = form_name, firstActiveRow = NULL, firstActiveCol = 2)
-
+      openxlsx::freezePane(
+        wb,
+        sheet = form_name,
+        firstActiveRow = NULL,
+        firstActiveCol = 2
+      )
 
       zero_cells <- which(form_tbl[-1] == 0, arr.ind = TRUE)
       if (nrow(zero_cells) > 0) {
@@ -630,10 +633,13 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
         cols <- zero_cells[, 2] + 1
 
         openxlsx::addStyle(
-          wb, sheet = form_name,
+          wb,
+          sheet = form_name,
           style = bg_style_0,
-          rows = rows, cols = cols,
-          gridExpand = FALSE, stack = TRUE
+          rows = rows,
+          cols = cols,
+          gridExpand = FALSE,
+          stack = TRUE
         )
       }
       non_zero_cells <- which(form_tbl[-1] > 0, arr.ind = TRUE)
@@ -642,14 +648,16 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
         cols <- non_zero_cells[, 2] + 1
 
         openxlsx::addStyle(
-          wb, sheet = form_name,
+          wb,
+          sheet = form_name,
           style = bg_style,
-          rows = rows, cols = cols,
-          gridExpand = FALSE, stack = TRUE
+          rows = rows,
+          cols = cols,
+          gridExpand = FALSE,
+          stack = TRUE
         )
       }
     }
   )
   openxlsx::saveWorkbook(wb, save_path, overwrite = TRUE)
-
 }

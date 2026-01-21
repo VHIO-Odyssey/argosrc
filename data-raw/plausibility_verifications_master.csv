@@ -15,16 +15,30 @@ date2::ic_date::seronco1
 date2::dob::brave
 min_period
 max_period
-unit";date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100, unit = 'years';The period of time is defined from date1 to date2. Make sure date1 is the expected earlier date.
+unit";"date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100, unit = 'years'
+date1 = 'dob_date', date2 = 'pt_prescreening_ic_date', min_period = 18, max_period = 100, unit = 'years'
+date1 = 'dob_date', date2 = 'pt_ic_date', min_period = 18, max_period = 100, unit = 'years'";The period of time is defined from date1 to date2. Make sure date1 is the expected earlier date.
 verif_3;1;The variable's value matches the expected value.;intraform;"var_name::any
 expected";"var_name = 'incl_\\d+', expected = 'Yes'
-var_name = 'excl_\\d+', expected = 'No'";This verification accepts pattern names.
-verif_4;1;A variable's value is constant across instances.;intraform_multiinstance;var_name::any;var_name = 'tm_n?tl_site_lesion_\\d+';This verification accepts pattern names.
+var_name = 'pt_ic_question\\d+', expected = 'Yes'
+var_name = 'pt_ic_question\\d+_v2', expected = 'Yes'
+var_name = 'donor_ic_question\\d+', expected = 'Yes'
+var_name = 'donor_ic_question\\d+_v2', expected = 'Yes'
+var_name = 'excl_\\d+', expected = 'No'
+var_name = 'pt_ec_question\\d+', expected = 'No'
+var_name = 'pt_ec_question\\d+_v2', expected = 'No'
+var_name = 'donor_ec_question\\d+', expected = 'No'
+var_name = 'donor_ec_question\\d+_v2', expected = 'No'";This verification accepts pattern names.
+verif_4;1;A variable's value is constant across instances.;intraform_multiinstance;var_name::any;"var_name = 'tm_n?tl_site_lesion_\\d+'
+var_name= 'targ\\d+_organ_subs'
+var_name= 'notarg\\d+_organ_subs'";This verification accepts pattern names.
 verif_5;1;The overall RECIST response agrees with the reported responses of the target, non-target, and new lesions.;intraform;"target_response::target_lesions_response_subs::ttd_20_04_ody
 no_target_response::notarg_lesions_response_subs::ttd_20_04_ody
 no_target_response::notarg_lesions_response_subs::brave
+no_target_response::notarg_lesions_response_subs::nk_act_bc_2020
 new_lesions::new_lesion_stat::ttd_20_04_ody
-overall_response::orr::ttd_20_04_ody";target_response = 'target_lesions_response_subs', no_target_response = 'notarg_lesions_response_subs', new_lesions = 'new_lesion_stat', overall_response = 'orr';
+overall_response::orr::ttd_20_04_ody
+overall_response::orr::nk_act_bc_2020";target_response = 'target_lesions_response_subs', no_target_response = 'notarg_lesions_response_subs', new_lesions = 'new_lesion_stat', overall_response = 'orr';
 verif_6;1;Last follow-up of an alive patient is within the expected schelude.;intraform_multiinstance;"last_fu_date::last_fu_date::brave
 last_fu_status::last_fu_status::brave
 time_limit

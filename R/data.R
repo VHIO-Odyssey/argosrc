@@ -36,18 +36,16 @@
 # This functions is completely specific to the creation of the verifications
 # master. That is why it is here.
 create_arguments_metadata <- function(arguments) {
-
   splited_arguments <-
     arguments |>
+    stringr::str_replace_all("\r", "") |>
     stringr::str_split("\n") |>
     unlist()
 
   purrr::map(
     splited_arguments,
     function(x) {
-
       if (!stringr::str_detect(x, "::")) {
-
         result <-
           tibble::tibble(
             argument = x,
@@ -58,12 +56,9 @@ create_arguments_metadata <- function(arguments) {
           )
 
         return(result)
-
       }
 
-
       if (stringr::str_detect(x, "::any$")) {
-
         result <-
           tibble::tibble(
             argument = stringr::str_remove(x, "::any$"),
@@ -74,7 +69,6 @@ create_arguments_metadata <- function(arguments) {
           )
 
         return(result)
-
       }
 
       argument <- stringr::str_split(x, "::") |> unlist()
@@ -95,21 +89,18 @@ create_arguments_metadata <- function(arguments) {
         field_choices = metadata$select_choices_or_calculations,
         field_validation = metadata$text_validation_type_or_show_slider_number,
       )
-
     }
   ) |>
     purrr::list_rbind()
-
 }
-
 
 
 # This functions is completely specific to the creation of the verifications
 # master. That is why it is here.
 create_candidates_mapping <- function(candidates) {
-
   candidates |>
-    stringr::str_split("\n|\r\n") |>
+    stringr::str_replace_all("\r", "") |>
+    stringr::str_split("\n") |>
     unlist() |>
     purrr::map(
       function(x) {
@@ -117,13 +108,12 @@ create_candidates_mapping <- function(candidates) {
         arg_names <- names(arg_vector)
         names(arg_vector) <- NULL
         purrr::map2(
-          arg_vector, arg_names,
+          arg_vector,
+          arg_names,
           ~ tibble::tibble("{.y}" := .x)
         ) |>
           purrr::list_cbind()
       }
     ) |>
     purrr::list_rbind()
-
 }
-

@@ -1,9 +1,7 @@
 # Plausability related general functions
 
-
 # Internal helper to filter issues from the verified data and glue the issue text
 filter_issues <- function(verified_data, issue_text) {
-
   verified_data |>
     dplyr::filter(!.data$.ok | is.na(.data$.ok)) |>
     dplyr::mutate(
@@ -11,24 +9,23 @@ filter_issues <- function(verified_data, issue_text) {
     ) |>
     dplyr::select(
       1,
-      dplyr::any_of(c(
-        "redcap_event_name",
-        "redcap_form_name",
-        "redcap_instance_type",
-        "redcap_instance_number"
+      # Selecciona por patrón por si s incluyen campos de formularios distintos
+      tidyselect::matches(c(
+        "^redcap_event_name",
+        "^redcap_form_name",
+        "^redcap_instance_number"
       )),
       issue
     )
-
 }
 
 # Internal helper to find valid set of arguments for each verification.
 find_valid_candidates <- function(
-    arguments_metadata,
-    candidates_mapping,
-    complexity,
-    metadata) {
-
+  arguments_metadata,
+  candidates_mapping,
+  complexity,
+  metadata
+) {
   # Para detectar si los argumentos corresponden a variables de redcap hay que
   # quedarse con los asi definidos y extraer las constantes.
   redcap_fields <- arguments_metadata |>
@@ -38,11 +35,10 @@ find_valid_candidates <- function(
 
   candidates_list <-
     purrr::map(
-      1:nrow(candidates_mapping), ~
-        candidates_mapping[., ] |>
+      1:nrow(candidates_mapping),
+      ~ candidates_mapping[., ] |>
         dplyr::select(tidyselect::all_of(redcap_fields))
     )
-
 
   # Se mira si todas las variables candidatas están en el metadata.
   # Se mira por patrón.
@@ -52,7 +48,7 @@ find_valid_candidates <- function(
       function(candidates) {
         purrr::map_lgl(
           candidates,
-          ~stringr::str_detect(
+          ~ stringr::str_detect(
             metadata$field_name,
             stringr::str_c("^", ., "$")
           ) |>
@@ -64,7 +60,9 @@ find_valid_candidates <- function(
 
   present_candidates <- candidates_list[candidates_index]
 
-  if (length(present_candidates) == 0) return(NA)
+  if (length(present_candidates) == 0) {
+    return(NA)
+  }
 
   # Forms where the present candidates belong to
   distinct_forms <-
@@ -86,27 +84,22 @@ find_valid_candidates <- function(
   # If intraform complexity, we make sure all variables from the same set belong to
   # the same form
   if (stringr::str_detect(complexity, "intraform")) {
-
     present_candidates <- present_candidates[n_distinct_forms == 1]
 
     if (length(present_candidates) == 0) return(NA)
-
   }
 
   # If interform complexity, we make sure at least two variables from the same set
   # belong to different forms.
   if (stringr::str_detect(complexity, "interform")) {
-
     present_candidates <- present_candidates[n_distinct_forms > 1]
 
     if (length(present_candidates) == 0) return(NA)
-
   }
 
   # If multiinstance complexity, we make sure at least one variable from the set
   # belongs to a repeating form.
   if (stringr::str_detect(complexity, "multiinstance")) {
-
     forms_events_mapping <- attr(redcap_data, "forms_events_mapping")
     repeating <- attr(redcap_data, "repeating")
 
@@ -121,26 +114,25 @@ find_valid_candidates <- function(
       dplyr::pull(form) |>
       unique()
 
-
     all_repeating_forms <- union(repeating_forms, repeating_forms_event)
 
     is_repeating_form <- purrr::map_lgl(
-      distinct_forms, ~ any(. %in% all_repeating_forms)
+      distinct_forms,
+      ~ any(. %in% all_repeating_forms)
     )
 
     present_candidates <- present_candidates[is_repeating_form]
 
     if (length(present_candidates) == 0) return(NA)
-
   }
-
 
   present_candidates_match <-
     purrr::map(
       present_candidates,
       function(candidates_set) {
         purrr::map2(
-          candidates_set, names(candidates_set),
+          candidates_set,
+          names(candidates_set),
           ~ dplyr::filter(
             metadata,
             stringr::str_detect(
@@ -173,13 +165,13 @@ find_valid_candidates <- function(
           ),
           no_need_match = field_type == "NA",
           type_ok = field_type_cand == field_type,
-          choices_ok = stringr::str_remove_all(field_choices_cand, " ") == stringr::str_remove_all(field_choices, " "),
+          choices_ok = stringr::str_remove_all(field_choices_cand, " ") ==
+            stringr::str_remove_all(field_choices, " "),
           validation_ok = field_validation_cand == field_validation,
           field_match = no_need_match | (type_ok & choices_ok & validation_ok)
-        )|>
+        ) |>
         dplyr::select("argument", "field_name", "field_match")
     )
-
 
   valid_candidates_index <-
     purrr::map_lgl(
@@ -189,16 +181,16 @@ find_valid_candidates <- function(
         dplyr::summarise(arg_ok = any(.data$field_match)) |>
         dplyr::summarise(args_ok = all(.data$arg_ok)) |>
         dplyr::pull(args_ok)
-      )
+    )
 
   valid_candidates <- present_candidates[valid_candidates_index]
 
-  if (length(valid_candidates) == 0) return(NA)
-
+  if (length(valid_candidates) == 0) {
+    return(NA)
+  }
 
   # Se añaden las constantes si las hubiere.
   if (any(arguments_metadata$argument_type == "constant")) {
-
     constants <-
       arguments_metadata |>
       dplyr::filter(.data[["argument_type"]] == "constant") |>
@@ -210,27 +202,19 @@ find_valid_candidates <- function(
     # If the constants are defined in the mapping, they are added to the valid
     # candidates. Otherwise NA constants are added.
     if (all(names(constants) %in% names(candidates_mapping))) {
-
       purrr::map(
         valid_candidates,
         ~ dplyr::left_join(., candidates_mapping, by = redcap_fields)
       )
-
     } else {
-
       purrr::map(
         valid_candidates,
         ~ dplyr::bind_cols(., constants)
       )
-
     }
-
   } else {
-
     valid_candidates
-
   }
-
 }
 
 #' Check Plausibility of REDCap Data
@@ -264,7 +248,6 @@ find_valid_candidates <- function(
 #'
 #' @export
 argos_check_plausibility <- function(rc_data, constants_list = NULL) {
-
   rc_data_expr <- rlang::enexpr(rc_data)
 
   metadata <- attr(rc_data, "metadata")
@@ -282,11 +265,10 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     dplyr::mutate(
       verif_fn = stringr::str_c(.data[["id"]], "_", .data[["version"]])
     ) |>
-    dplyr::select("verif_fn",  verif_arg = "valid_candidates", "description") |>
+    dplyr::select("verif_fn", verif_arg = "valid_candidates", "description") |>
     tidyr::unnest("verif_arg")
 
   if (!is.null(constants_list)) {
-
     verif_extra_names <-
       purrr::map_chr(constants_list, ~ dplyr::pull(., "verif_fn")) |>
       unique()
@@ -295,13 +277,11 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
       purrr::map(
         verif_extra_names,
         function(x) {
-
           verif_index <- purrr::map_lgl(constants_list, ~ .$verif_fn == x)
 
           constants_list[verif_index] |>
             purrr::list_rbind() |>
             dplyr::select(-"verif_fn")
-
         }
       )
 
@@ -319,14 +299,14 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
           unique()
       )
 
-
     detected_verifications_modif <-
       purrr::pmap(
         tibble::tibble(
-          verif_extra_names, verif_extra_args, verif_extra_values
+          verif_extra_names,
+          verif_extra_args,
+          verif_extra_values
         ),
         function(verif_extra_names, verif_extra_args, verif_extra_values) {
-
           verifs_to_complete <-
             detected_verifications_v0 |>
             dplyr::filter(.data[["verif_fn"]] == verif_extra_names)
@@ -338,7 +318,9 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
                 function(x) {
                   args_join <-
                     dplyr::left_join(
-                      x, verif_extra_values, by = verif_extra_args
+                      x,
+                      verif_extra_values,
+                      by = verif_extra_args
                     )
 
                   no_added_constants <-
@@ -348,22 +330,17 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
                     all()
 
                   if (no_added_constants) {
-
                     args_join |>
                       dplyr::select(!tidyselect::ends_with(".y")) |>
                       dplyr::rename_with(~ stringr::str_remove(., ".x$"))
-
                   } else {
-
                     args_join |>
                       dplyr::select(!tidyselect::ends_with(".x")) |>
                       dplyr::rename_with(~ stringr::str_remove(., ".y$"))
-
                   }
                 }
               )
             )
-
         }
       ) |>
       purrr::list_rbind() |>
@@ -376,7 +353,6 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
         detected_verifications_modif
       ) |>
       dplyr::arrange(.data[["verif_fn"]])
-
   }
 
   detected_verifications <-
@@ -408,7 +384,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
   detected_verifications_expanded_args <-
     detected_verifications_ready |>
     dplyr::mutate(
-      verif_arg =  purrr::map(
+      verif_arg = purrr::map(
         .data$verif_arg,
         function(args) {
           full_args <-
@@ -417,15 +393,19 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
               ~ metadata |>
                 dplyr::filter(
                   stringr::str_detect(
-                    field_name, stringr::str_c(
-                      "^", ., "$"
+                    field_name,
+                    stringr::str_c(
+                      "^",
+                      .,
+                      "$"
                     )
                   )
                 ) |>
                 dplyr::pull(field_name)
             )
           purrr::map2(
-            args, full_args,
+            args,
+            full_args,
             function(args, full_args) {
               if (length(full_args) > 1) full_args else args
             }
@@ -438,14 +418,16 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     detected_verifications_expanded_args |>
     dplyr::mutate(
       issues = purrr::map2(
-        verif_fn, verif_arg,
+        verif_fn,
+        verif_arg,
         ~ tryCatch(
           do.call(.x, c(.y, rc_data = rc_data_expr)),
           error = function(e) NULL
         )
       ),
       n_issues = purrr::map_int(
-        issues, ~ ifelse(is.null(.), NA_integer_, nrow(.))
+        issues,
+        ~ ifelse(is.null(.), NA_integer_, nrow(.))
       )
     ) |>
     dplyr::relocate(.data[["n_issues"]], .before = "issues") |>
@@ -455,7 +437,6 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     )
 
   if (nrow(detected_verifications_undefined) > 0) {
-
     dplyr::bind_rows(
       detected_verifications_executed,
       detected_verifications_undefined |>
@@ -463,14 +444,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
         dplyr::mutate(verif_arg = purrr::map(verif_arg, as.list))
     ) |>
       dplyr::arrange(.data[["verif_fn"]])
-
   } else {
-
     detected_verifications_executed
-
   }
-
-
-
-
 }

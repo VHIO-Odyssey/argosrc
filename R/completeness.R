@@ -205,7 +205,7 @@ verify_completeness_form <- function(
       # branching logic
       cond_variables <- stringr::str_extract_all(
         as.character(current_condition),
-        stringr::str_c(attr(redcap_data, "metadata")$field_name, collapse = "|")
+        stringr::str_c(attr(rc_data, "metadata")$field_name, collapse = "|")
       ) |>
         unlist() |>
         unique()
@@ -216,7 +216,7 @@ verify_completeness_form <- function(
 
       if (length(extra_form_variables) > 0) {
         extra_form_list <- odytools::ody_rc_select(
-          redcap_data,
+          rc_data,
           !!extra_form_variables
         )
 
@@ -430,8 +430,8 @@ argos_check_completeness <- function(
 
   field_label <- metadata |>
     dplyr::select("field_name", "field_label")
-  form_names <- attr(redcap_data, "forms")
-  event_names <- attr(redcap_data, "events") |>
+  form_names <- attr(rc_data, "forms")
+  event_names <- attr(rc_data, "events") |>
     dplyr::select("event_name", "unique_event_name")
 
   completeness_result |>

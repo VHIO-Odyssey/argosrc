@@ -24,7 +24,8 @@ find_valid_candidates <- function(
   arguments_metadata,
   candidates_mapping,
   complexity,
-  metadata
+  metadata,
+  rc_data
 ) {
   # Para detectar si los argumentos corresponden a variables de redcap hay que
   # quedarse con los asi definidos y extraer las constantes.
@@ -100,8 +101,8 @@ find_valid_candidates <- function(
   # If multiinstance complexity, we make sure at least one variable from the set
   # belongs to a repeating form.
   if (stringr::str_detect(complexity, "multiinstance")) {
-    forms_events_mapping <- attr(redcap_data, "forms_events_mapping")
-    repeating <- attr(redcap_data, "repeating")
+    forms_events_mapping <- attr(rc_data, "forms_events_mapping")
+    repeating <- attr(rc_data, "repeating")
 
     repeating_forms <- na.omit(repeating$form_name) |> unique()
     repeating_events <- repeating |>
@@ -258,7 +259,8 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
       valid_candidates = purrr::pmap(
         tibble::tibble(arguments_metadata, candidates_mapping, complexity),
         find_valid_candidates,
-        metadata
+        metadata,
+        rc_data
       )
     ) |>
     dplyr::filter(!is.na(.data[["valid_candidates"]])) |>
@@ -437,14 +439,98 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     )
 
   if (nrow(detected_verifications_undefined) > 0) {
-    dplyr::bind_rows(
-      detected_verifications_executed,
-      detected_verifications_undefined |>
-        # Arguments table is transformed to list of lists for consistency
-        dplyr::mutate(verif_arg = purrr::map(verif_arg, as.list))
-    ) |>
+    argos_result <-
+      dplyr::bind_rows(
+        detected_verifications_executed,
+        detected_verifications_undefined |>
+          # Arguments table is transformed to list of lists for consistency
+          dplyr::mutate(verif_arg = purrr::map(verif_arg, as.list))
+      ) |>
       dplyr::arrange(.data[["verif_fn"]])
   } else {
-    detected_verifications_executed
+    argos_result <- detected_verifications_executed
   }
+
+  project_info <- attr(rc_data, "project_info") |>
+    dplyr::select("project_id", "project_title")
+  attr(argos_result, "redcap_project") <- project_info
+  attr(argos_result, "redcap_import_date") <- attr(rc_data, "import_date")
+
+  argos_result
+}
+
+argos_write_plausibility_report <- function(argos_results, file_path) {
+  results_excel <-
+    argos_results |>
+    dplyr::mutate(
+      verif_num = 1:dplyr::n(),
+      .before = 1
+    ) |>
+    dplyr::mutate(
+      verif_arg = purrr::map_chr(
+        verif_arg,
+        ~ stringr::str_c(names(.), " = ", unlist(.), collapse = "; ")
+      )
+    )
+
+  verif_num_issues <-
+    results_excel |>
+    dplyr::filter(.data$n_issues > 0) |>
+    dplyr::pull(.data$verif_num)
+
+  project_info <- attr(argos_results, "redcap_project")
+
+  wb <-
+    openxlsx2::wb_workbook() |>
+    openxlsx2::wb_add_worksheet("project_info") |>
+    openxlsx2::wb_add_data_table(
+      x = project_info,
+      na = ""
+    ) |>
+    openxlsx2::wb_add_worksheet("summary") |>
+    openxlsx2::wb_add_data_table(
+      x = results_excel |>
+        dplyr::select(-"issues"),
+      na = ""
+    ) |>
+    openxlsx2::wb_set_col_widths(
+      cols = 1:ncol(results_excel),
+      widths = "auto"
+    )
+
+  for (i in verif_num_issues) {
+    issues <- results_excel$issues[[i]]
+    sheet_name <- paste0("verif_num_", results_excel$verif_num[i])
+    wb <- openxlsx2::wb_add_worksheet(wb, sheet_name) |>
+      openxlsx2::wb_add_data_table(
+        x = issues,
+        na = ""
+      ) |>
+      openxlsx2::wb_set_col_widths(
+        cols = 1:ncol(issues),
+        widths = "auto"
+      )
+  }
+
+  import_date <- attr(argos_results, "redcap_import_date") |>
+    stringr::str_extract("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}") |>
+    stringr::str_replace_all(" ", "_") |>
+    stringr::str_remove_all("[-:]")
+
+  if (stringr::str_detect(file_path, "\\.xlsx$")) {
+    final_file_path <- stringr::str_replace(
+      file_path,
+      "\\.xlsx$",
+      paste0("_", import_date, ".xlsx")
+    )
+  } else {
+    final_file_path <- stringr::str_c(
+      file_path,
+      "_",
+      import_date,
+      ".xlsx"
+    )
+  }
+
+  openxlsx2::wb_save(wb, here::here(final_file_path))
 }

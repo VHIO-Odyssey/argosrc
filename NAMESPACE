@@ -3,6 +3,7 @@
 export(argos_check_completeness)
 export(argos_check_plausibility)
 export(argos_count_forms)
+export(argos_write_plausibility_report)
 importFrom(rlang,":=")
 importFrom(rlang,.data)
 importFrom(rlang,.env)

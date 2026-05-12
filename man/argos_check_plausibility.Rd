@@ -2,37 +2,75 @@
 % Please edit documentation in R/plausibility_general.R
 \name{argos_check_plausibility}
 \alias{argos_check_plausibility}
-\title{Check Plausibility of REDCap Data}
+\title{Check REDCap Data for Plausibility Issues}
 \usage{
 argos_check_plausibility(rc_data, constants_list = NULL)
 }
 \arguments{
-\item{rc_data}{A data frame representing the REDCap export data. It must
-be obtained with \code{odytools::ody_rc_import} and contain a "metadata"
-attribute describing the data dictionary.}
+\item{rc_data}{A REDCap export object returned by `odytools::ody_rc_import()`.
+It must be a data frame-like object with, at minimum, the attributes
+`metadata`, `project_info`, and `import_date`. For verifications involving
+repeating instruments or events, the attributes `forms_events_mapping` and
+`repeating` must also be present.}
 
-\item{constants_list}{Optional list of tibbles to provide additional constant values. Each tibble must include a `verif_fn` column indicating the verification function it applies to, along with other columns for arguments. Note that all arguments must be provided, regardless of whether they are constants or REDCap fields, in order to avoid potential ambiguity among candidate fields. These values will override any existing constants defined in the verification master.}
+\item{constants_list}{A list of tibbles, or `NULL`. Each tibble must contain
+a `verif_fn` column naming the target verification in the form
+`"<id>_<version>"`, plus one column per verification argument. When
+provided, these values replace constant arguments derived from the master
+verification table for matching verifications. All arguments must be
+supplied in each tibble row to avoid ambiguity when matching candidate
+fields.}
 }
 \value{
-A tibble with columns:
-\describe{
-  \item{verif_fn}{The name of the verification function applied.}
-  \item{verif_arg}{The valid candidate arguments used for verification.}
-  \item{description}{Description of the verification.}
-  \item{n_issues}{Number of issues detected by the verification.}
-  \item{issues}{A list-column of data frames detailing detected issues.}
-}
+A tibble with one row per detected verification candidate.
+  The returned object includes the columns
+  \describe{
+    \item{verif_fn}{A character string identifying the verification function
+    to execute, built as `<id>_<version>`.}
+    \item{verif_arg}{A list-column containing the arguments passed to the
+    verification. Each element is a named list; some elements may be
+    character vectors when a metadata pattern matches multiple field names.}
+    \item{description}{A character string copied from the verification
+    catalogue.}
+    \item{execution}{A character string describing execution status. Values
+    are `"ok"` for successful execution, `"fail"` when execution raised an
+    error, and `"missing constants"` when required constants were not
+    available.}
+    \item{n_issues}{An integer giving the number of rows returned by the
+    verification. It is `NA` when a verification failed or could not be run
+    because constants were missing.}
+    \item{issues}{A list-column of data frames returned by each verification,
+    or `NULL` for failed executions.}
+  }
+
+  The returned tibble also carries the attributes `redcap_project`, a tibble
+  with project identifiers extracted from `rc_data`, and
+  `redcap_import_date`, copied from `attr(rc_data, "import_date")`.
 }
 \description{
-This function evaluates a REDCap dataset for plausibility issues by
-applying a series of predefined verifications. It identifies valid
-candidate fields based on metadata consistency, executes respective
-verification functions, and returns detected issues.
+Evaluate a REDCap export against the plausibility verification catalogue
+  stored in `plausibility_verifications_master`.
+
+  The function identifies candidate REDCap fields that match the argument
+  specification of each verification, optionally injects user-supplied
+  constant values, expands regular-expression field mappings to the matching
+  field names in the project metadata, and executes each verification
+  function. The result is a structured tibble describing which checks were
+  run, which ones could not be run, and the issues detected for each one.
 }
 \details{
-The function uses global object `plausibility_verifications_master` to find
-applicable verifications. It filters candidates by metadata consistency and
-complexity ("intraform" constraints). Each verification function is called
-with its respective arguments on `rc_data`, and the resulting issues are
-collected.
+Candidate arguments are first filtered by checking whether the referenced
+  REDCap fields exist in the metadata and whether their field type, choices,
+  and validation rules match the verification specification. The `complexity`
+  field in the verification catalogue is then used to restrict candidate sets
+  to intraform, interform, or multi-instance configurations.
+
+  Verifications with unresolved constants are not executed. Instead, they are
+  returned with `execution = "missing constants"`. Executed verifications are
+  called with `do.call()`. Errors are caught and represented as
+  `execution = "fail"` with `n_issues = NA` and `issues = NULL`.
+}
+\seealso{
+[argos::argos_write_plausibility_report()],
+  [argos::plausibility_verifications_master]
 }

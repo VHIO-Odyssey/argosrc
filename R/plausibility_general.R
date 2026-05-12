@@ -219,35 +219,70 @@ find_valid_candidates <- function(
   }
 }
 
-#' Check Plausibility of REDCap Data
+#' @title Check REDCap Data for Plausibility Issues
+#' @description
+#'   Evaluate a REDCap export against the plausibility verification catalogue
+#'   stored in `plausibility_verifications_master`.
 #'
-#' This function evaluates a REDCap dataset for plausibility issues by
-#' applying a series of predefined verifications. It identifies valid
-#' candidate fields based on metadata consistency, executes respective
-#' verification functions, and returns detected issues.
+#'   The function identifies candidate REDCap fields that match the argument
+#'   specification of each verification, optionally injects user-supplied
+#'   constant values, expands regular-expression field mappings to the matching
+#'   field names in the project metadata, and executes each verification
+#'   function. The result is a structured tibble describing which checks were
+#'   run, which ones could not be run, and the issues detected for each one.
 #'
-#' @param rc_data A data frame representing the REDCap export data. It must
-#'   be obtained with \code{odytools::ody_rc_import} and contain a "metadata"
-#'   attribute describing the data dictionary.
+#' @param rc_data A REDCap export object returned by `odytools::ody_rc_import()`.
+#'   It must be a data frame-like object with, at minimum, the attributes
+#'   `metadata`, `project_info`, and `import_date`. For verifications involving
+#'   repeating instruments or events, the attributes `forms_events_mapping` and
+#'   `repeating` must also be present.
+#' @param constants_list A list of tibbles, or `NULL`. Each tibble must contain
+#'   a `verif_fn` column naming the target verification in the form
+#'   `"<id>_<version>"`, plus one column per verification argument. When
+#'   provided, these values replace constant arguments derived from the master
+#'   verification table for matching verifications. All arguments must be
+#'   supplied in each tibble row to avoid ambiguity when matching candidate
+#'   fields.
 #'
-#' @param constants_list Optional list of tibbles to provide additional constant values. Each tibble must include a `verif_fn` column indicating the verification function it applies to, along with other columns for arguments. Note that all arguments must be provided, regardless of whether they are constants or REDCap fields, in order to avoid potential ambiguity among candidate fields. These values will override any existing constants defined in the verification master.
+#' @return A tibble with one row per detected verification candidate.
+#'   The returned object includes the columns
+#'   \describe{
+#'     \item{verif_fn}{A character string identifying the verification function
+#'     to execute, built as `<id>_<version>`.}
+#'     \item{verif_arg}{A list-column containing the arguments passed to the
+#'     verification. Each element is a named list; some elements may be
+#'     character vectors when a metadata pattern matches multiple field names.}
+#'     \item{description}{A character string copied from the verification
+#'     catalogue.}
+#'     \item{execution}{A character string describing execution status. Values
+#'     are `"ok"` for successful execution, `"fail"` when execution raised an
+#'     error, and `"missing constants"` when required constants were not
+#'     available.}
+#'     \item{n_issues}{An integer giving the number of rows returned by the
+#'     verification. It is `NA` when a verification failed or could not be run
+#'     because constants were missing.}
+#'     \item{issues}{A list-column of data frames returned by each verification,
+#'     or `NULL` for failed executions.}
+#'   }
 #'
-#' @return A tibble with columns:
-#' \describe{
-#'   \item{verif_fn}{The name of the verification function applied.}
-#'   \item{verif_arg}{The valid candidate arguments used for verification.}
-#'   \item{description}{Description of the verification.}
-#'   \item{n_issues}{Number of issues detected by the verification.}
-#'   \item{issues}{A list-column of data frames detailing detected issues.}
-#' }
+#'   The returned tibble also carries the attributes `redcap_project`, a tibble
+#'   with project identifiers extracted from `rc_data`, and
+#'   `redcap_import_date`, copied from `attr(rc_data, "import_date")`.
 #'
 #' @details
-#' The function uses global object `plausibility_verifications_master` to find
-#' applicable verifications. It filters candidates by metadata consistency and
-#' complexity ("intraform" constraints). Each verification function is called
-#' with its respective arguments on `rc_data`, and the resulting issues are
-#' collected.
+#'   Candidate arguments are first filtered by checking whether the referenced
+#'   REDCap fields exist in the metadata and whether their field type, choices,
+#'   and validation rules match the verification specification. The `complexity`
+#'   field in the verification catalogue is then used to restrict candidate sets
+#'   to intraform, interform, or multi-instance configurations.
 #'
+#'   Verifications with unresolved constants are not executed. Instead, they are
+#'   returned with `execution = "missing constants"`. Executed verifications are
+#'   called with `do.call()`. Errors are caught and represented as
+#'   `execution = "fail"` with `n_issues = NA` and `issues = NULL`.
+#'
+#' @seealso [argos_write_plausibility_report()],
+#'   [plausibility_verifications_master]
 #' @export
 argos_check_plausibility <- function(rc_data, constants_list = NULL) {
   rc_data_expr <- rlang::enexpr(rc_data)
@@ -464,6 +499,41 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
   argos_result
 }
 
+#' @title Write an Excel Plausibility Report
+#' @description
+#'   Create an Excel workbook summarising plausibility verification results and
+#'   write it to disk.
+#'
+#'   The workbook includes a `project_info` sheet built from the
+#'   `redcap_project` attribute of `argos_results`, a `summary` sheet with one
+#'   row per verification, and one additional worksheet for each verification
+#'   that contains at least one detected issue.
+#'
+#' @param argos_results A tibble of plausibility check results, typically
+#'   returned by `argos_check_plausibility()`. It must contain at least the
+#'   columns `verif_arg`, `n_issues`, and `issues`, and it is expected to carry
+#'   the attributes `redcap_project` and `redcap_import_date`.
+#' @param file_path A character scalar specifying the output file path or file
+#'   stem. If it ends in `.xlsx`, the timestamp derived from
+#'   `redcap_import_date` is inserted before the extension; otherwise the
+#'   function appends the timestamp and the `.xlsx` extension.
+#'
+#' @return The result returned by `openxlsx2::wb_save()` after writing the Excel
+#'   workbook to `here::here(final_file_path)`. As a side effect, an `.xlsx`
+#'   file is created on disk.
+#'
+#' @details
+#'   The function converts each element of `verif_arg` into a single character
+#'   string for the summary sheet, numbers verifications sequentially in a
+#'   `verif_num` column, and writes issue-specific worksheets only for rows
+#'   where `n_issues > 0`.
+#'
+#'   The output filename is suffixed with a compact timestamp extracted from the
+#'   `redcap_import_date` attribute using the pattern `YYYYMMDD_HHMM` without
+#'   separators other than the underscore between date and time.
+#'
+#' @seealso [argos_check_plausibility()]
+#' @export
 argos_write_plausibility_report <- function(argos_results, file_path) {
   results_excel <-
     argos_results |>

@@ -15,7 +15,7 @@ filter_issues <- function(verified_data, issue_text) {
         "^redcap_form_name",
         "^redcap_instance_number"
       )),
-      issue
+      .data$issue
     )
 }
 
@@ -30,8 +30,8 @@ find_valid_candidates <- function(
   # Para detectar si los argumentos corresponden a variables de redcap hay que
   # quedarse con los asi definidos y extraer las constantes.
   redcap_fields <- arguments_metadata |>
-    dplyr::filter(.data[["argument_type"]] == "redcap_field") |>
-    dplyr::pull(argument) |>
+    dplyr::filter(.data$argument_type == "redcap_field") |>
+    dplyr::pull("argument") |>
     unique()
 
   candidates_list <-
@@ -107,12 +107,13 @@ find_valid_candidates <- function(
     repeating_forms <- na.omit(repeating$form_name) |> unique()
     repeating_events <- repeating |>
       dplyr::filter(is.na(.data$form_name)) |>
-      dplyr::pull(event_name) |>
+      dplyr::pull("event_name") |>
       unique()
 
     repeating_forms_event <- forms_events_mapping |>
-      dplyr::filter(unique_event_name %in% repeating_events) |>
-      dplyr::pull(form) |>
+      dplyr::filter(.data$unique_event_name %in% repeating_events) |>
+      dplyr::pull("form") |>
+
       unique()
 
     all_repeating_forms <- union(repeating_forms, repeating_forms_event)
@@ -257,15 +258,19 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     plausibility_verifications_master |>
     dplyr::mutate(
       valid_candidates = purrr::pmap(
-        tibble::tibble(arguments_metadata, candidates_mapping, complexity),
+        tibble::tibble(
+          arguments_metadata = .data$arguments_metadata,
+          candidates_mapping = .data$candidates_mapping,
+          complexity = .data$complexity
+        ),
         find_valid_candidates,
         metadata,
         rc_data
       )
     ) |>
-    dplyr::filter(!is.na(.data[["valid_candidates"]])) |>
+    dplyr::filter(!is.na(.data$valid_candidates)) |>
     dplyr::mutate(
-      verif_fn = stringr::str_c(.data[["id"]], "_", .data[["version"]])
+      verif_fn = stringr::str_c(.data$id, "_", .data$version)
     ) |>
     dplyr::select("verif_fn", verif_arg = "valid_candidates", "description") |>
     tidyr::unnest("verif_arg")
@@ -292,11 +297,11 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
         verif_extra_names,
         ~ plausibility_verifications_master |>
           dplyr::filter(
-            stringr::str_c(.data[["id"]], "_", .data[["version"]]) == .
+            stringr::str_c(.data$id, "_", .data$version) == .
           ) |>
           dplyr::select("arguments_metadata") |>
           tidyr::unnest("arguments_metadata") |>
-          dplyr::filter(.data[["argument_type"]] == "redcap_field") |>
+          dplyr::filter(.data$argument_type == "redcap_field") |>
           dplyr::pull("argument") |>
           unique()
       )
@@ -316,7 +321,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
           verifs_to_complete |>
             dplyr::mutate(
               verif_arg = purrr::map(
-                verif_arg,
+                .data$verif_arg,
                 function(x) {
                   args_join <-
                     dplyr::left_join(
@@ -420,21 +425,21 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     detected_verifications_expanded_args |>
     dplyr::mutate(
       issues = purrr::map2(
-        verif_fn,
-        verif_arg,
+        .data$verif_fn,
+        .data$verif_arg,
         ~ tryCatch(
           do.call(.x, c(.y, rc_data = rc_data_expr)),
           error = function(e) NULL
         )
       ),
       n_issues = purrr::map_int(
-        issues,
+        .data$issues,
         ~ ifelse(is.null(.), NA_integer_, nrow(.))
       )
     ) |>
-    dplyr::relocate(.data[["n_issues"]], .before = "issues") |>
+    dplyr::relocate(.data$n_issues, .before = "issues") |>
     dplyr::mutate(
-      execution = ifelse(is.na(.data[["n_issues"]]), "fail", "ok"),
+      execution = ifelse(is.na(.data$n_issues), "fail", "ok"),
       .before = "n_issues"
     )
 
@@ -444,7 +449,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
         detected_verifications_executed,
         detected_verifications_undefined |>
           # Arguments table is transformed to list of lists for consistency
-          dplyr::mutate(verif_arg = purrr::map(verif_arg, as.list))
+          dplyr::mutate(verif_arg = purrr::map(.data$verif_arg, as.list))
       ) |>
       dplyr::arrange(.data[["verif_fn"]])
   } else {
@@ -468,7 +473,7 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
     ) |>
     dplyr::mutate(
       verif_arg = purrr::map_chr(
-        verif_arg,
+        .data$verif_arg,
         ~ stringr::str_c(names(.), " = ", unlist(.), collapse = "; ")
       )
     )

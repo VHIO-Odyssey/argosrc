@@ -3,3 +3,7 @@
 export(argos_check_completeness)
 export(argos_check_plausibility)
 export(argos_count_forms)
+importFrom(rlang,":=")
+importFrom(rlang,.data)
+importFrom(rlang,.env)
+importFrom(stats,na.omit)

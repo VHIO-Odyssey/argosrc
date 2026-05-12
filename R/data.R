@@ -80,7 +80,7 @@ create_arguments_metadata <- function(arguments) {
               stringr::str_to_upper()
           )
         ) |>
-        dplyr::filter(field_name == argument[2])
+        dplyr::filter(.data$field_name == argument[2])
 
       tibble::tibble(
         argument = argument[1],

@@ -97,7 +97,7 @@ verif_2_1 <- function(rc_data, date1, date2, min_period, max_period, unit) {
         unit = unit
       ),
       .ok = dplyr::between(
-        period_years,
+        .data$period_years,
         as.numeric(min_period),
         as.numeric(max_period)
       )
@@ -114,7 +114,7 @@ verif_3_1 <- function(rc_data, var_name, expected) {
     odytools::ody_rc_format() |>
     tidyr::pivot_longer(cols = tidyselect::all_of(var_name)) |>
     dplyr::mutate(
-      .ok = is.na(value) | value == expected
+      .ok = is.na(.data$value) | .data$value == expected
     ) |>
     filter_issues(
       issue_text = glue::glue(
@@ -138,17 +138,20 @@ verif_4_1 <- function(rc_data, var_name) {
       .data$value
     ) |>
     dplyr::summarise(
-      instance_value = stringr::str_c(redcap_instance_number, collapse = ",") |>
-        stringr::str_c("=", unique(value))
+      instance_value = stringr::str_c(
+        .data$redcap_instance_number,
+        collapse = ","
+      ) |>
+        stringr::str_c("=", unique(.data$value))
     ) |>
     dplyr::summarise(
-      grouped_values = stringr::str_c(instance_value, collapse = " & "),
+      grouped_values = stringr::str_c(.data$instance_value, collapse = " & "),
       redcap_instance_number = NA_character_,
       n = dplyr::n()
     ) |>
     dplyr::ungroup() |>
     dplyr::mutate(
-      .ok = n == 1
+      .ok = .data$n == 1
     ) |>
     filter_issues(
       issue_text = "<<name>> is not equal across instances (<<grouped_values>>)."
@@ -232,7 +235,7 @@ verif_6_1 <- function(rc_data, last_fu_date, last_fu_status, time_limit, unit) {
   ) |>
     odytools::ody_rc_format() |>
     # filter to ensure we only check the latest follow-up in a repetating form.
-    dplyr::filter(redcap_instance_type != "unique") |>
+    dplyr::filter(.data$redcap_instance_type != "unique") |>
     dplyr::mutate(
       time_since_last_fu = lubridate::time_length(
         import_date - .data[[last_fu_date]],

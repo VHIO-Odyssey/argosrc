@@ -139,7 +139,7 @@ verify_completeness_form <- function(
         variable = NA_character_,
         completeness_issue = NA_character_
       ) |>
-      dplyr::filter(!is.na(variable))
+      dplyr::filter(!is.na(.data$variable))
 
     return(empty_result)
   }
@@ -176,7 +176,7 @@ verify_completeness_form <- function(
         variable = NA_character_,
         completeness_issue = NA_character_
       ) |>
-      dplyr::filter(!is.na(variable))
+      dplyr::filter(!is.na(.data$variable))
 
     return(empty_result)
   }
@@ -342,7 +342,7 @@ verify_completeness_form <- function(
       by = c("missing_value" = "raw_value")
     ) |>
     dplyr::mutate(
-      missing_value = label
+      missing_value = .data$label
     ) |>
     dplyr::select(-"label")
 }
@@ -436,20 +436,20 @@ argos_check_completeness <- function(
 
   completeness_result |>
     dplyr::left_join(field_label, by = c("variable" = "field_name")) |>
-    dplyr::relocate(.data$field_label, .after = variable) |>
+    dplyr::relocate(.data$field_label, .after = "variable") |>
     dplyr::rename(field = .data$field_label) |>
     dplyr::left_join(
       form_names,
       by = c("redcap_form_name" = "instrument_name")
     ) |>
-    dplyr::relocate(.data$instrument_label, .after = redcap_form_name) |>
+    dplyr::relocate(.data$instrument_label, .after = "redcap_form_name") |>
     dplyr::select(-"redcap_form_name") |>
     dplyr::rename(form = .data$instrument_label) |>
     dplyr::left_join(
       event_names,
       by = c("redcap_event_name" = "unique_event_name")
     ) |>
-    dplyr::relocate(.data$event_name, .after = redcap_event_name) |>
+    dplyr::relocate(.data$event_name, .after = "redcap_event_name") |>
     dplyr::select(-"redcap_event_name") |>
     dplyr::rename(
       event = .data$event_name,
@@ -516,16 +516,16 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
       } else {
         forms_count <-
           form_data |>
-          dplyr::count(.data[[id_var]], .data[["redcap_event_name"]]) |>
+          dplyr::count(.data[[id_var]], .data$redcap_event_name) |>
           dplyr::mutate(
             redcap_form_name = form,
-            .before = n
+            .before = "n"
           )
       }
 
       expected_events <-
         forms_events_mapping |>
-        dplyr::filter(.data[["form"]] == .env$form) |>
+        dplyr::filter(.data$form == .env$form) |>
         dplyr::pull("unique_event_name")
 
       expected_structure <-
@@ -541,7 +541,7 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
         by = c(id_var, "redcap_event_name", "redcap_form_name")
       ) |>
         dplyr::mutate(
-          n = tidyr::replace_na(n, 0)
+          n = tidyr::replace_na(.data$n, 0)
         ) |>
         dplyr::arrange(.data[[id_var]])
     }
@@ -549,15 +549,15 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
     purrr::list_rbind() |>
     dplyr::mutate(
       redcap_event_name = factor(
-        redcap_event_name,
+        .data$redcap_event_name,
         levels = events
       ),
       redcap_form_name = factor(
-        redcap_form_name,
+        .data$redcap_form_name,
         levels = forms
       )
     ) |>
-    dplyr::arrange(redcap_event_name)
+    dplyr::arrange(.data$redcap_event_name)
 
   if (is.null(save_path)) {
     return(form_count_raw)
@@ -580,7 +580,12 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
     events_attr <-
       events_attr |>
       dplyr::mutate(
-        event_name = stringr::str_c(event_name, " (Arm ", arm_num, ")")
+        event_name = stringr::str_c(
+          .data$event_name,
+          " (Arm ",
+          .data$arm_num,
+          ")"
+        )
       )
   }
 

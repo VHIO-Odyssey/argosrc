@@ -71,6 +71,6 @@ Candidate arguments are first filtered by checking whether the referenced
   `execution = "fail"` with `n_issues = NA` and `issues = NULL`.
 }
 \seealso{
-[argos::argos_write_plausibility_report()],
-  [argos::plausibility_verifications_master]
+[argos_write_plausibility_report()],
+  [plausibility_verifications_master]
 }

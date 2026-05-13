@@ -8,10 +8,12 @@ date1 = 'prev_qt_startdate', date2 = 'prev_qt_enddate'
 date1 = 'pt_first_date', date2 = 'pt_last_date'
 date1 = 'ic_date', date2 = 'ic_date_reconsent'
 date1 = 'ttm_startdate', date2 = 'ttm_enddate'
-date1 = 'data_inici', date2 = 'data_final'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.
+date1 = 'data_inici', date2 = 'data_final'
+date1 = 'conmed_startdate', date2 = 'conmed_enddate'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates where one is known to precede the other.
 verif_1;2;A given date is no later than a second given date (dates in different forms). ;interform_multiinstance;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'r_date_ic', date2 = 'ae_start_date'
-date1 = 'ic_date', date2 = 'ae_startdate'";Verification to ensure that a patient's unique date variable (date1) occurs on or before another date (date2) associated with a multi-instance form. A typical case would be verifying that the Informed Consent (IC) date is prior to or equal to all Adverse Event (AE) start dates.
+date1 = 'ic_date', date2 = 'ae_startdate'
+date1 = 'screening_ic', date2 = 'ae_startdate'";Verification to ensure that a patient's unique date variable (date1) occurs on or before another date (date2) associated with a multi-instance form. A typical case would be verifying that the Informed Consent (IC) date is prior to or equal to all Adverse Event (AE) start dates.
 verif_2;1;The period between the two given dates falls within a defined range.;interform;"date1::ic_date::seronco1
 date1::dob::brave
 date2::ic_date::seronco1

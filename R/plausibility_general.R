@@ -294,9 +294,9 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     dplyr::mutate(
       valid_candidates = purrr::pmap(
         tibble::tibble(
-          arguments_metadata = .data$arguments_metadata,
-          candidates_mapping = .data$candidates_mapping,
-          complexity = .data$complexity
+          arguments_metadata = plausibility_verifications_master$arguments_metadata,
+          candidates_mapping = plausibility_verifications_master$candidates_mapping,
+          complexity = plausibility_verifications_master$complexity
         ),
         find_valid_candidates,
         metadata,
@@ -499,6 +499,35 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
   argos_result
 }
 
+# Helper function to create human-readable verification descriptions based on
+# the verification function and its arguments.
+# It is used by `argos_write_plausibility_report()`.
+create_verification_description <- function(verif_fn, verif_arg, description) {
+  if (verif_fn == "verif_1_1") {
+    glue::glue(
+      "{verif_arg$date1} is before {verif_arg$date2}"
+    )
+  } else if (verif_fn == "verif_1_2") {
+    glue::glue(
+      "{verif_arg$date1} is before {verif_arg$date2} for all instances"
+    )
+  } else if (verif_fn == "verif_4_1") {
+    glue::glue(
+      "Variable(s) {stringr::str_c(verif_arg$var_name, collapse = ', ')} have the same value across all instances."
+    )
+  } else if (verif_fn == "verif_5_1") {
+    glue::glue(
+      "The value of {verif_arg$overall_response} must be consistent with the values provided in {verif_arg$target_response}, {verif_arg$no_target_response}, and {verif_arg$new_lesions}."
+    )
+  } else if (verif_fn == "verif_6_1") {
+    glue::glue(
+      "The last follow-up date for a patient who is alive is within the last {verif_arg$time_limit} {verif_arg$unit}(s)."
+    )
+  } else {
+    description
+  }
+}
+
 #' @title Write an Excel Plausibility Report
 #' @description
 #'   Create an Excel workbook summarising plausibility verification results and
@@ -545,6 +574,14 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
       verif_arg = purrr::map_chr(
         .data$verif_arg,
         ~ stringr::str_c(names(.), " = ", unlist(.), collapse = "; ")
+      ),
+      verification = purrr::pmap_chr(
+        tibble::tibble(
+          verif_fn = argos_results$verif_fn,
+          verif_arg = argos_results$verif_arg,
+          description = argos_results$description
+        ),
+        create_verification_description
       )
     )
 
@@ -565,7 +602,14 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
     openxlsx2::wb_add_worksheet("summary") |>
     openxlsx2::wb_add_data_table(
       x = results_excel |>
-        dplyr::select(-"issues"),
+        dplyr::select(
+          "verif_num",
+          "verification",
+          "execution",
+          "n_issues",
+          "verif_fn",
+          "verif_arg"
+        ),
       na = ""
     ) |>
     openxlsx2::wb_set_col_widths(

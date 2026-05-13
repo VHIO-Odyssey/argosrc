@@ -236,6 +236,10 @@ verif_6_1 <- function(rc_data, last_fu_date, last_fu_status, time_limit, unit) {
     odytools::ody_rc_format() |>
     # filter to ensure we only check the latest follow-up in a repetating form.
     dplyr::filter(.data$redcap_instance_type != "unique") |>
+    dplyr::filter_out(is.na(.data[[last_fu_date]])) |>
+    dplyr::group_by(.data[[attr(rc_data, "id_var")]]) |>
+    dplyr::slice_max(order_by = as.numeric(.data$redcap_instance_number)) |>
+    dplyr::ungroup() |>
     dplyr::mutate(
       time_since_last_fu = lubridate::time_length(
         import_date - .data[[last_fu_date]],

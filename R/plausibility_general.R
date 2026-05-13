@@ -491,17 +491,65 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     argos_result <- detected_verifications_executed
   }
 
+  # Project info as attribute
   project_info <- attr(rc_data, "project_info") |>
     dplyr::select("project_id", "project_title")
   attr(argos_result, "redcap_project") <- project_info
+  # Import date as attribute
   attr(argos_result, "redcap_import_date") <- attr(rc_data, "import_date")
 
-  argos_result
+  # Review subjects and DAGs (if any) as attribute.
+  reviewed_subjects <- attr(rc_data, "subjects")
+  dags <- attr(rc_data, "dag")
+
+  if (is.null(reviewed_subjects)) {
+    attr(argos_result, "reviewed_subjects") <- tibble::tibble(
+      reviewed_subjects
+    ) |>
+      dplyr::arrange(reviewed_subjects)
+  } else {
+    attr(argos_result, "reviewed_subjects") <-
+      tibble::tibble(reviewed_subjects) |>
+      dplyr::left_join(
+        attr(rc_data, "subjects_dag"),
+        by = c("reviewed_subjects" = attr(rc_data, "id_var"))
+      ) |>
+      dplyr::left_join(
+        dags,
+        by = c("redcap_data_access_group" = "unique_group_name")
+      ) |>
+      dplyr::select(
+        reviewed_subjects,
+        site = "data_access_group_name"
+      ) |>
+      dplyr::arrange(site, reviewed_subjects)
+  }
+
+  argos_result |>
+    # Se crea una descripción de la verificación más concreta basada en los
+    # argumentos utilizados.
+    dplyr::mutate(
+      verification = purrr::pmap_chr(
+        tibble::tibble(
+          verif_fn = argos_results$verif_fn,
+          verif_arg = argos_results$verif_arg,
+          description = argos_results$description
+        ),
+        create_verification_description
+      )
+    ) |>
+    dplyr::select(
+      "verif_fn",
+      "verif_arg",
+      "verification",
+      "execution",
+      "n_issues",
+      "issues"
+    )
 }
 
 # Helper function to create human-readable verification descriptions based on
 # the verification function and its arguments.
-# It is used by `argos_write_plausibility_report()`.
 create_verification_description <- function(verif_fn, verif_arg, description) {
   if (verif_fn == "verif_1_1") {
     glue::glue(
@@ -574,14 +622,6 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
       verif_arg = purrr::map_chr(
         .data$verif_arg,
         ~ stringr::str_c(names(.), " = ", unlist(.), collapse = "; ")
-      ),
-      verification = purrr::pmap_chr(
-        tibble::tibble(
-          verif_fn = argos_results$verif_fn,
-          verif_arg = argos_results$verif_arg,
-          description = argos_results$description
-        ),
-        create_verification_description
       )
     )
 
@@ -590,7 +630,12 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
     dplyr::filter(.data$n_issues > 0) |>
     dplyr::pull(.data$verif_num)
 
-  project_info <- attr(argos_results, "redcap_project")
+  project_info <- attr(argos_results, "redcap_project") |>
+    dplyr::mutate(
+      import_date = attr(argos_results, "redcap_import_date")
+    )
+
+  reviewed_subjects <- attr(argos_results, "reviewed_subjects")
 
   wb <-
     openxlsx2::wb_workbook() |>
@@ -599,16 +644,27 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
       x = project_info,
       na = ""
     ) |>
-    openxlsx2::wb_add_worksheet("summary") |>
+    openxlsx2::wb_set_col_widths(
+      cols = 1:ncol(project_info),
+      widths = "auto"
+    ) |>
+    openxlsx2::wb_add_worksheet("reviewed_subjects") |>
+    openxlsx2::wb_add_data_table(
+      x = reviewed_subjects,
+      na = ""
+    ) |>
+    openxlsx2::wb_set_col_widths(
+      cols = 1:ncol(reviewed_subjects),
+      widths = "auto"
+    ) |>
+    openxlsx2::wb_add_worksheet("verifications") |>
     openxlsx2::wb_add_data_table(
       x = results_excel |>
         dplyr::select(
           "verif_num",
           "verification",
           "execution",
-          "n_issues",
-          "verif_fn",
-          "verif_arg"
+          "n_issues"
         ),
       na = ""
     ) |>

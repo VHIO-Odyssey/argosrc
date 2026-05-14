@@ -273,7 +273,7 @@ verif_7_1 <- function(rc_data, visit_date, end_date, time_limit, unit) {
     odytools::ody_rc_select(rc_data, !!end_date) |>
     odytools::ody_rc_format() |>
     dplyr::select(
-      all_of(attr(rc_data, "id_var")),
+      tidyselect::all_of(attr(rc_data, "id_var")),
       !!end_date
     )
 

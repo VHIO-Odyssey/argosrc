@@ -118,7 +118,7 @@ find_valid_candidates <- function(
     # Formularios repetidos por aparecer en más de un evento (aunque ni el
     # evento ni el formulario sean repertidos per se)
     multievent_forms <-
-      dplyr::count(forms_events_mapping, form) |>
+      dplyr::count(forms_events_mapping, .data$form) |>
       dplyr::filter(.data$n > 1) |>
       dplyr::pull("form") |>
       unique()
@@ -514,7 +514,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     attr(argos_result, "reviewed_subjects") <- tibble::tibble(
       reviewed_subjects
     ) |>
-      dplyr::arrange(reviewed_subjects)
+      dplyr::arrange(.data$reviewed_subjects)
   } else {
     attr(argos_result, "reviewed_subjects") <-
       tibble::tibble(reviewed_subjects) |>
@@ -530,7 +530,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
         reviewed_subjects,
         site = "data_access_group_name"
       ) |>
-      dplyr::arrange(site, reviewed_subjects)
+      dplyr::arrange(.data$site, .data$reviewed_subjects)
   }
 
   argos_result |>
@@ -581,7 +581,7 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
     )
   } else if (verif_fn == "verif_7_1") {
     glue::glue(
-      "The last value of {verif_arg$visit_date} for a patient with {verif_arg$end_date} = 'NA' is within the last {verif_arg$time_limit} {verif_arg$unit}."
+      "The last value of {verif_arg$visit_date} for a patient with missing{verif_arg$end_date} is within the last {verif_arg$time_limit} {verif_arg$unit}."
     )
   } else {
     description

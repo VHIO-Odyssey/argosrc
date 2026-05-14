@@ -11,7 +11,7 @@
 
 It is designed for clinical research workflows where REDCap exports need quick, reproducible quality control before analysis.
 
-Argos was Odysseus's dog. Old and weak, he was the only one who recognized Odysseus when he returned to Ithaca after 20 years away; once his duty was done, he died.
+Argos was Odysseus's dog. Old and weak, he is the first to recognize Odysseus when he returns to Ithaca after 20 years away, even while disguised; he wags his tail and lowers his ears, then dies shortly afterward.
 
 ![](man/figures/Ulysses_and_Argo.png)
 

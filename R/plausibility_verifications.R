@@ -38,7 +38,7 @@ verif_1_2 <- function(rc_data, date1, date2) {
     # plausibility issue)
     dplyr::filter_out(is.na(.data[[date1]])) |>
     dplyr::rename_with(
-      ~ stringr::str_c(., "_date1"),
+      ~ stringr::str_c(., "_", date1),
       dplyr::starts_with("redcap")
     )
 
@@ -53,7 +53,7 @@ verif_1_2 <- function(rc_data, date1, date2) {
     # plausibility issue)
     dplyr::filter_out(is.na(.data[[date2]])) |>
     dplyr::rename_with(
-      ~ stringr::str_c(., "_date2"),
+      ~ stringr::str_c(., "_", date2),
       dplyr::starts_with("redcap")
     )
 
@@ -254,6 +254,42 @@ verif_6_1 <- function(rc_data, last_fu_date, last_fu_status, time_limit, unit) {
     filter_issues(
       issue_text = glue::glue(
         "Last follow-up date (<<{last_fu_date}>>) is <<round(time_since_last_fu, 1)>> {unit} ago and status is 'Alive' (expected <= {time_limit} {unit})."
+      )
+    )
+}
+
+verif_7_1 <- function(rc_data, visit_date, end_date, time_limit, unit) {
+  import_date <- attr(rc_data, "import_date") |> as.Date()
+
+  last_date <-
+    odytools::ody_rc_select(rc_data, !!visit_date) |>
+    odytools::ody_rc_format() |>
+    dplyr::filter_out(is.na(.data[[visit_date]])) |>
+    dplyr::group_by(.data[[attr(rc_data, "id_var")]]) |>
+    dplyr::slice_tail(n = 1) |>
+    dplyr::ungroup()
+
+  stop_date <-
+    odytools::ody_rc_select(rc_data, !!end_date) |>
+    odytools::ody_rc_format() |>
+    dplyr::select(
+      all_of(attr(rc_data, "id_var")),
+      !!end_date
+    )
+
+  dplyr::full_join(last_date, stop_date, by = attr(rc_data, "id_var")) |>
+    dplyr::mutate(
+      time_since_vist = lubridate::time_length(
+        import_date - .data[[visit_date]],
+        unit = unit
+      )
+    ) |>
+    dplyr::mutate(
+      .ok = !is.na(.data[[end_date]]) | .data$time_since_vist <= time_limit
+    ) |>
+    filter_issues(
+      issue_text = glue::glue(
+        "Last {visit_date} (<<{visit_date}>>) is more than {time_limit} {unit} ago and {end_date} is missing."
       )
     )
 }

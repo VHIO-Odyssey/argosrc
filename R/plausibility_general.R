@@ -104,19 +104,27 @@ find_valid_candidates <- function(
     forms_events_mapping <- attr(rc_data, "forms_events_mapping")
     repeating <- attr(rc_data, "repeating")
 
+    # Formularios repetidos
     repeating_forms <- na.omit(repeating$form_name) |> unique()
+    # Formularios repetidos por pertecer a evento repertido
     repeating_events <- repeating |>
       dplyr::filter(is.na(.data$form_name)) |>
       dplyr::pull("event_name") |>
       unique()
-
     repeating_forms_event <- forms_events_mapping |>
       dplyr::filter(.data$unique_event_name %in% repeating_events) |>
       dplyr::pull("form") |>
-
+      unique()
+    # Formularios repetidos por aparecer en más de un evento (aunque ni el
+    # evento ni el formulario sean repertidos per se)
+    multievent_forms <-
+      dplyr::count(forms_events_mapping, form) |>
+      dplyr::filter(.data$n > 1) |>
+      dplyr::pull("form") |>
       unique()
 
-    all_repeating_forms <- union(repeating_forms, repeating_forms_event)
+    all_repeating_forms <- union(repeating_forms, repeating_forms_event) |>
+      union(multievent_forms)
 
     is_repeating_form <- purrr::map_lgl(
       distinct_forms,
@@ -531,9 +539,9 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
     dplyr::mutate(
       verification = purrr::pmap_chr(
         tibble::tibble(
-          verif_fn = argos_results$verif_fn,
-          verif_arg = argos_results$verif_arg,
-          description = argos_results$description
+          verif_fn = argos_result$verif_fn,
+          verif_arg = argos_result$verif_arg,
+          description = argos_result$description
         ),
         create_verification_description
       )
@@ -569,7 +577,11 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
     )
   } else if (verif_fn == "verif_6_1") {
     glue::glue(
-      "The last follow-up date for a patient who is alive is within the last {verif_arg$time_limit} {verif_arg$unit}(s)."
+      "The last value of {verif_arg$last_fu_date} for a patient with {verif_arg$last_fu_status} = 'Alive' is within the last {verif_arg$time_limit} {verif_arg$unit}."
+    )
+  } else if (verif_fn == "verif_7_1") {
+    glue::glue(
+      "The last value of {verif_arg$visit_date} for a patient with {verif_arg$end_date} = 'NA' is within the last {verif_arg$time_limit} {verif_arg$unit}."
     )
   } else {
     description

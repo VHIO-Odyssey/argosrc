@@ -37,7 +37,7 @@ argos_add_folders <- function() {
 
   file.copy(
     system.file(
-      "argos_templates",
+      "argosrc_templates",
       "completeness.R",
       package = "argosrc"
     ),
@@ -51,7 +51,7 @@ argos_add_folders <- function() {
 
   file.copy(
     system.file(
-      "argos_templates",
+      "argosrc_templates",
       "plausibility.R",
       package = "argosrc"
     ),

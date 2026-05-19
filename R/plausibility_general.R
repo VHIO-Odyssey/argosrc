@@ -227,6 +227,126 @@ find_valid_candidates <- function(
   }
 }
 
+#' @title Build an Ad-hoc Plausibility Result Entry
+#' @description
+#'   Create a plausibility-result tibble from an ad-hoc verification output.
+#'   The function filters rows where `.ok` is `FALSE` or `NA`, builds a human-
+#'   readable issue string with `glue::glue()`, and reshapes the output to the
+#'   structure expected by `argos_check_plausibility()`.
+#'
+#' @param verified_data A data frame or tibble containing verification results.
+#'   It must include an `.ok` logical column, the subject identifier in the
+#'   first column, and optionally REDCap context columns matching
+#'   `^redcap_event_name`, `^redcap_form_name`, and
+#'   `^redcap_instance_number`.
+#' @param verification_description A character string describing the
+#'   verification that produced `verified_data`.
+#' @param issue_text A character string interpreted as a glue template. It can
+#'   reference columns from `verified_data` to create row-level issue messages.
+#'
+#' @return A tibble with one row and the columns:
+#'   \describe{
+#'     \item{verification}{A character string with `verification_description`.}
+#'     \item{execution}{A character string set to `"ok"`.}
+#'     \item{n_issues}{An integer with the number of detected issue rows.}
+#'     \item{issues}{A nested tibble containing identifier/context columns and
+#'       an `issue` column.}
+#'   }
+#'
+#'   The returned object has attribute `add_to_plausibility = TRUE`, used by
+#'   `argos_run_ad_hoc_verifications()` to discover ad-hoc outputs.
+#'
+#' @seealso [argos_run_ad_hoc_verifications()], [argos_check_plausibility()]
+#' @export
+argos_add_to_plausibility <- function(
+  verified_data,
+  verification_description,
+  issue_text
+) {
+  issues_tbl <-
+    verified_data |>
+    dplyr::filter(!.data$.ok | is.na(.data$.ok)) |>
+    dplyr::mutate(
+      issue = glue::glue(issue_text)
+    ) |>
+    dplyr::select(
+      1, # La primera que siempre ha de ser el id.
+      # Selecciona por patrón por si s incluyen campos de formularios distintos
+      tidyselect::matches(c(
+        "^redcap_event_name",
+        "^redcap_form_name",
+        "^redcap_instance_number"
+      )),
+      "issue"
+    ) |>
+    dplyr::mutate(
+      verification = verification_description
+    ) |>
+    tidyr::nest(issues = -"verification") |>
+    dplyr::mutate(
+      execution = "ok",
+      n_issues = purrr::map_int(.data$issues, nrow),
+      .after = "verification"
+    )
+
+  attr(issues_tbl, "add_to_plausibility") <- TRUE
+  issues_tbl
+}
+
+#' @title Run Ad-hoc Plausibility Verification Scripts
+#' @description
+#'   Source one or more external R scripts and collect objects marked as
+#'   plausibility outputs.
+#'
+#'   The function loads `.RData` files found in the project root, sources each
+#'   script path in the current environment, and then scans created objects for
+#'   the `add_to_plausibility` attribute set by
+#'   `argos_add_to_plausibility()`. Matching objects are combined into a single
+#'   tibble and tagged with their object name as `verif_fn`.
+#'
+#' @param script_path A character vector of file paths to ad-hoc verification
+#'   scripts. Each script is expected to create one or more objects produced by
+#'   `argos_add_to_plausibility()`.
+#'
+#' @return A tibble created by row-binding all discovered ad-hoc verification
+#'   objects. It includes a `verif_fn` column (object name) plus the columns
+#'   returned by `argos_add_to_plausibility()`.
+#'
+#' @seealso [argos_add_to_plausibility()], [argos_check_plausibility()]
+#' @export
+argos_run_ad_hoc_verifications <- function(script_path) {
+  rdatas <- list.files(here::here(), ".RData$")
+  if (length(rdatas) != 0) {
+    load(rdatas)
+  }
+
+  redcap_data <- rlang::env_get(rlang::current_env(), "redcap_data")
+  datasets <- rlang::env_get(rlang::current_env(), "datasets")
+  purrr::walk(
+    script_path,
+    source,
+    local = rlang::current_env()
+  )
+
+  current_objects <- ls()
+  verif_index <- purrr::map_lgl(
+    current_objects,
+    ~ !is.null(
+      attr(rlang::env_get(rlang::caller_env(3), .), "add_to_plausibility")
+    )
+  )
+  to_verifications <- current_objects[verif_index]
+  purrr::map(
+    to_verifications,
+    ~ rlang::env_get(rlang::caller_env(3), .) |>
+      dplyr::mutate(
+        verif_fn = .,
+        .before = 1
+      )
+  ) |>
+    purrr::list_rbind()
+}
+
 #' @title Check REDCap Data for Plausibility Issues
 #' @description
 #'   Evaluate a REDCap export against the plausibility verification catalogue
@@ -251,17 +371,22 @@ find_valid_candidates <- function(
 #'   verification table for matching verifications. All arguments must be
 #'   supplied in each tibble row to avoid ambiguity when matching candidate
 #'   fields.
+#' @param ad_hoc_verifications_path A character vector of paths to ad-hoc
+#'   verification scripts, or `NULL`. When provided, scripts are sourced with
+#'   [argos_run_ad_hoc_verifications()] and their results are appended to the
+#'   automatic plausibility checks.
 #'
-#' @return A tibble with one row per detected verification candidate.
-#'   The returned object includes the columns
+#' @return A tibble with one row per executed or unresolved verification. The
+#'   returned object includes the columns
 #'   \describe{
 #'     \item{verif_fn}{A character string identifying the verification function
 #'     to execute, built as `<id>_<version>`.}
 #'     \item{verif_arg}{A list-column containing the arguments passed to the
 #'     verification. Each element is a named list; some elements may be
-#'     character vectors when a metadata pattern matches multiple field names.}
-#'     \item{description}{A character string copied from the verification
-#'     catalogue.}
+#'     character vectors when a metadata pattern matches multiple field names.
+#'     For ad-hoc verifications, this column may be `NA`.}
+#'     \item{verification}{A character string describing the verification in a
+#'     human-readable format.}
 #'     \item{execution}{A character string describing execution status. Values
 #'     are `"ok"` for successful execution, `"fail"` when execution raised an
 #'     error, and `"missing constants"` when required constants were not
@@ -287,12 +412,18 @@ find_valid_candidates <- function(
 #'   Verifications with unresolved constants are not executed. Instead, they are
 #'   returned with `execution = "missing constants"`. Executed verifications are
 #'   called with `do.call()`. Errors are caught and represented as
-#'   `execution = "fail"` with `n_issues = NA` and `issues = NULL`.
+#'   `execution = "fail"` with `n_issues = NA` and `issues = NULL`. When
+#'   `ad_hoc_verifications_path` is provided, ad-hoc results are appended after
+#'   automatic checks.
 #'
 #' @seealso [argos_write_plausibility_report()],
 #'   [plausibility_verifications_master]
 #' @export
-argos_check_plausibility <- function(rc_data, constants_list = NULL) {
+argos_check_plausibility <- function(
+  rc_data,
+  constants_list = NULL,
+  ad_hoc_verifications_path = NULL
+) {
   rc_data_expr <- rlang::enexpr(rc_data)
 
   metadata <- attr(rc_data, "metadata")
@@ -533,7 +664,7 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
       dplyr::arrange(.data$site, .data$reviewed_subjects)
   }
 
-  argos_result |>
+  argos_automatic <- argos_result |>
     # Se crea una descripción de la verificación más concreta basada en los
     # argumentos utilizados.
     dplyr::mutate(
@@ -554,6 +685,21 @@ argos_check_plausibility <- function(rc_data, constants_list = NULL) {
       "n_issues",
       "issues"
     )
+
+  if (!is.null(ad_hoc_verifications_path)) {
+    ad_hoc_verifications <- argos_run_ad_hoc_verifications(
+      ad_hoc_verifications_path
+    )
+
+    argos_final_result <- dplyr::bind_rows(
+      argos_automatic,
+      ad_hoc_verifications
+    )
+  } else {
+    argos_final_result <- argos_automatic
+  }
+
+  argos_final_result
 }
 
 # Helper function to create human-readable verification descriptions based on
@@ -566,6 +712,10 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
   } else if (verif_fn == "verif_1_2") {
     glue::glue(
       "{verif_arg$date1} is before {verif_arg$date2} for all instances"
+    )
+  } else if (verif_fn == "verif_1_3") {
+    glue::glue(
+      "{verif_arg$date1a} or {verif_arg$date1b} (the first one) is before {verif_arg$date2} for all instances"
     )
   } else if (verif_fn == "verif_4_1") {
     glue::glue(

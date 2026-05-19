@@ -4,7 +4,11 @@
 \alias{argos_check_plausibility}
 \title{Check REDCap Data for Plausibility Issues}
 \usage{
-argos_check_plausibility(rc_data, constants_list = NULL)
+argos_check_plausibility(
+  rc_data,
+  constants_list = NULL,
+  ad_hoc_verifications_path = NULL
+)
 }
 \arguments{
 \item{rc_data}{A REDCap export object returned by `odytools::ody_rc_import()`.
@@ -20,18 +24,24 @@ provided, these values replace constant arguments derived from the master
 verification table for matching verifications. All arguments must be
 supplied in each tibble row to avoid ambiguity when matching candidate
 fields.}
+
+\item{ad_hoc_verifications_path}{A character vector of paths to ad-hoc
+verification scripts, or `NULL`. When provided, scripts are sourced with
+[argos_run_ad_hoc_verifications()] and their results are appended to the
+automatic plausibility checks.}
 }
 \value{
-A tibble with one row per detected verification candidate.
-  The returned object includes the columns
+A tibble with one row per executed or unresolved verification. The
+  returned object includes the columns
   \describe{
     \item{verif_fn}{A character string identifying the verification function
     to execute, built as `<id>_<version>`.}
     \item{verif_arg}{A list-column containing the arguments passed to the
     verification. Each element is a named list; some elements may be
-    character vectors when a metadata pattern matches multiple field names.}
-    \item{description}{A character string copied from the verification
-    catalogue.}
+    character vectors when a metadata pattern matches multiple field names.
+    For ad-hoc verifications, this column may be `NA`.}
+    \item{verification}{A character string describing the verification in a
+    human-readable format.}
     \item{execution}{A character string describing execution status. Values
     are `"ok"` for successful execution, `"fail"` when execution raised an
     error, and `"missing constants"` when required constants were not
@@ -68,7 +78,9 @@ Candidate arguments are first filtered by checking whether the referenced
   Verifications with unresolved constants are not executed. Instead, they are
   returned with `execution = "missing constants"`. Executed verifications are
   called with `do.call()`. Errors are caught and represented as
-  `execution = "fail"` with `n_issues = NA` and `issues = NULL`.
+  `execution = "fail"` with `n_issues = NA` and `issues = NULL`. When
+  `ad_hoc_verifications_path` is provided, ad-hoc results are appended after
+  automatic checks.
 }
 \seealso{
 [argos_write_plausibility_report()],

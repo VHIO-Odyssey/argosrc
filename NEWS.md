@@ -11,6 +11,12 @@
 - Improved `verif_1_2` and `verif_1_3` to select the minimum date when multiple instances are available.
 - Optimized `argos_check_plausibility()` verification discovery and execution flow.
 
+## Plausibility ad-hoc workflow
+
+- Added `argos_add_to_plausibility()` to standardize ad-hoc verification outputs as nested plausibility issue tables that can be merged into the main plausibility results.
+- Added `argos_run_ad_hoc_verifications()` to source external verification scripts, detect objects marked for plausibility integration, and combine them into a single result table.
+- Enhanced `argos_check_plausibility()` with `ad_hoc_verifications_path` to append ad-hoc verification results to automatic checks in one unified output.
+
 # argosrc 0.0.1
 
 First release of **argosrc** (Automatic Review and Governance for Oncology Studies in REDCap).

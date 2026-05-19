@@ -20,7 +20,9 @@ General plausibility checking and reporting functions.
 
 -   filter_issues [dplyr, glue, tidyselect]
 -   find_valid_candidates [dplyr, purrr, stringr, tidyselect, tibble, tidyr]
--   argos_check_plausibility [find_valid_candidates, create_verification_description, plausibility_verifications_master, dplyr, purrr, tibble, stringr, tidyr, tidyselect, rlang]
+-   argos_add_to_plausibility [dplyr, glue, purrr, tidyr, tidyselect]
+-   argos_run_ad_hoc_verifications [argos_add_to_plausibility, dplyr, here, purrr, rlang]
+-   argos_check_plausibility [find_valid_candidates, argos_run_ad_hoc_verifications, create_verification_description, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
 -   create_verification_description [glue, stringr]
 -   argos_write_plausibility_report [dplyr, purrr, stringr, openxlsx2, here]
 

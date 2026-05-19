@@ -1,7 +1,7 @@
 Package: argosrc
 Type: Package
 Title: Automatic Review and Governance for Oncology Studies in REDCap
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R:
     person("Eduardo", "García-Galea", , "eduardogarcia@vhio.net", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-4699-0786"))
@@ -16,7 +16,7 @@ Imports:
     dplyr,
     glue,
     labelled,
-    odytools (>= 0.9.1.9000),
+    odytools (>= 0.9.6),
     purrr,
     rlang,
     stringr,

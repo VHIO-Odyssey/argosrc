@@ -2,6 +2,10 @@
 
 First release of **argosrc** (Automatic Review and Governance for Oncology Studies in REDCap).
 
+## Project setup
+
+- Added `argos_add_folders()` to create the `quality/argosrc` folder structure in an existing project and copy bundled completeness and plausibility template scripts named after the current project.
+
 ## Completeness
 
 - Added `argos_check_completeness()` to verify missing and unexpected values across REDCap forms. It respects branching logic defined in the project metadata, translating REDCap conditions into R expressions. Supports `"missing"`, `"unexpected"`, or `"both"` checks, user-defined missing value handling, and additional user-supplied conditions. Output can be returned in raw or human-readable `"friendly"` format.

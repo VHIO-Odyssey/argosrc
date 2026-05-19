@@ -58,8 +58,22 @@ argos_add_folders <- function() {
     here::here(
       "quality",
       "argosrc",
-      "plausibility",
-      stringr::str_c(odytools:::get_project_name(), "_plausibility.R")
+      "plausibility_master.R",
+      stringr::str_c(odytools:::get_project_name(), "_plausibility_master.R")
+    )
+  )
+
+  file.copy(
+    system.file(
+      "argosrc_templates",
+      "plausibility_adhoc.R",
+      package = "argosrc"
+    ),
+    here::here(
+      "quality",
+      "argosrc",
+      "plausibility_adhoc.R",
+      stringr::str_c(odytools:::get_project_name(), "_plausibility_adhoc.R")
     )
   )
 }

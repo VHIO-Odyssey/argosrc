@@ -1,3 +1,6 @@
+# Run argos plausibility checks from this script. You can include ad hoc
+# verifications in the ad hoc script.
+
 # Common constants definitions (constatnts_list):
 # list(
 #   tibble::tibble(

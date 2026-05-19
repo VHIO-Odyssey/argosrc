@@ -2,7 +2,7 @@
 
 Project scaffolding helpers.
 
--   argos_add_folders [here, stringr, odytools]
+-   argos_add_folders [get_project_name, here, stringr]
 
 ## **completeness**
 

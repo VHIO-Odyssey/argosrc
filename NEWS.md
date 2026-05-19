@@ -1,4 +1,15 @@
-# argosrc 0.0.1.9000
+# argsrc 0.0.1.9000
+
+## Verification catalogue
+
+- Added `verif_1_3`: date A is not after date B across all instances of a
+  repeating form (interform). Date A is defined by selecting the minimum of two candidate dates.
+
+## Bug fixes and improvements
+
+- Enhanced error handling with `safe_filter()` utility to gracefully handle edge cases where branching logic variables are not available in the current form context.
+- Improved `verif_1_2` and `verif_1_3` to select the minimum date when multiple instances are available.
+- Optimized `argos_check_plausibility()` verification discovery and execution flow.
 
 # argosrc 0.0.1
 

@@ -581,7 +581,7 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
     )
   } else if (verif_fn == "verif_7_1") {
     glue::glue(
-      "The last value of {verif_arg$visit_date} for a patient with missing{verif_arg$end_date} is within the last {verif_arg$time_limit} {verif_arg$unit}."
+      "The last value of {verif_arg$visit_date} for a patient with missing {verif_arg$end_date} is within the last {verif_arg$time_limit} {verif_arg$unit}."
     )
   } else {
     description
@@ -626,6 +626,7 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
 argos_write_plausibility_report <- function(argos_results, file_path) {
   results_excel <-
     argos_results |>
+    dplyr::filter(.data$execution == "ok") |>
     dplyr::mutate(
       verif_num = 1:dplyr::n(),
       .before = 1
@@ -675,7 +676,6 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
         dplyr::select(
           "verif_num",
           "verification",
-          "execution",
           "n_issues"
         ),
       na = ""
@@ -687,7 +687,7 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
 
   for (i in verif_num_issues) {
     issues <- results_excel$issues[[i]]
-    sheet_name <- paste0("verif_num_", results_excel$verif_num[i])
+    sheet_name <- paste0("verif_", results_excel$verif_num[i])
     wb <- openxlsx2::wb_add_worksheet(wb, sheet_name) |>
       openxlsx2::wb_add_data_table(
         x = issues,

@@ -26,8 +26,9 @@ verif_1_1 <- function(rc_data, date1, date2) {
 }
 
 verif_1_2 <- function(rc_data, date1, date2) {
-  # date1 is expected to be from a unique form but it accepts multiinstance
-  # cases like seronco-1.
+  # date1 is expected to be from a unique form.
+  # In case date1 comes from a repating form, the check is performed on th
+  # minimun date1
   date1_tbl <-
     odytools::ody_rc_select(
       rc_data,
@@ -37,6 +38,10 @@ verif_1_2 <- function(rc_data, date1, date2) {
     # only non missing cases (missingness is a completeness issue, not a
     # plausibility issue)
     dplyr::filter_out(is.na(.data[[date1]])) |>
+    dplyr::group_by(.data[[attr(rc_data, "id_var")]]) |>
+    dplyr::filter(.data[[date1]] == min(.data[[date1]])) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
     dplyr::rename_with(
       ~ stringr::str_c(., "_", date1),
       dplyr::starts_with("redcap")
@@ -69,6 +74,92 @@ verif_1_2 <- function(rc_data, date1, date2) {
     filter_issues(
       issue_text = glue::glue(
         "{date1} (<<{date1}>>) is after {date2} (<<{date2}>>)."
+      )
+    )
+}
+
+verif_1_3 <- function(rc_data, date1a, date1b, date2) {
+  date1a_tbl <-
+    odytools::ody_rc_select(
+      rc_data,
+      !!date1a,
+      .accept_form_name = FALSE
+    ) |>
+    # only non missing cases (missingness is a completeness issue, not a
+    # plausibility issue)
+    dplyr::filter_out(is.na(.data[[date1a]])) |>
+    dplyr::group_by(.data[[attr(rc_data, "id_var")]]) |>
+    dplyr::filter(.data[[date1a]] == min(.data[[date1a]])) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::rename_with(
+      ~ stringr::str_c(., "_", date1a),
+      dplyr::starts_with("redcap")
+    )
+
+  date1b_tbl <-
+    odytools::ody_rc_select(
+      rc_data,
+      !!date1b,
+      .accept_form_name = FALSE
+    ) |>
+    # only non missing cases (missingness is a completeness issue, not a
+    # plausibility issue)
+    dplyr::filter_out(is.na(.data[[date1b]])) |>
+    dplyr::group_by(.data[[attr(rc_data, "id_var")]]) |>
+    dplyr::filter(.data[[date1b]] == min(.data[[date1b]])) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::rename_with(
+      ~ stringr::str_c(., "_", date1b),
+      dplyr::starts_with("redcap")
+    )
+
+  date1_tbl <-
+    dplyr::full_join(date1a_tbl, date1b_tbl, by = attr(rc_data, "id_var")) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      date1_name = dplyr::case_when(
+        is.na(.data[[date1a]]) & !is.na(.data[[date1b]]) ~ date1b,
+        !is.na(.data[[date1a]]) & is.na(.data[[date1b]]) ~ date1a,
+        .data[[date1a]] < .data[[date1b]] ~ date1a,
+        .data[[date1a]] > .data[[date1b]] ~ date1b,
+        .default = date1a
+      ),
+      date1_value = min(
+        dplyr::c_across(tidyselect::all_of(c(date1a, date1b))),
+        na.rm = TRUE
+      )
+    ) |>
+    dplyr::ungroup()
+
+  # date2 is expected to be from a multi-instance form (e.g. Adverse Events)
+  date2_tbl <-
+    odytools::ody_rc_select(
+      rc_data,
+      !!date2,
+      .accept_form_name = FALSE
+    ) |>
+    # only non missing cases (missingness is a completeness issue, not a
+    # plausibility issue)
+    dplyr::filter_out(is.na(.data[[date2]])) |>
+    dplyr::rename_with(
+      ~ stringr::str_c(., "_", date2),
+      dplyr::starts_with("redcap")
+    )
+
+  dplyr::inner_join(
+    date1_tbl,
+    date2_tbl,
+    by = attr(rc_data, "id_var")
+  ) |>
+    odytools::ody_rc_format() |>
+    dplyr::mutate(
+      .ok = .data$date1_value <= .data[[date2]]
+    ) |>
+    filter_issues(
+      issue_text = glue::glue(
+        "<<date1_name>> (<<date1_value>>) is after {date2} (<<{date2}>>)."
       )
     )
 }

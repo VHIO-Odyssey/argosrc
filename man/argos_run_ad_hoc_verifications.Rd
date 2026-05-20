@@ -2,29 +2,51 @@
 % Please edit documentation in R/plausibility_general.R
 \name{argos_run_ad_hoc_verifications}
 \alias{argos_run_ad_hoc_verifications}
-\title{Run Ad-hoc Plausibility Verification Scripts}
+\title{Collect Ad-hoc Plausibility Results from Scripts}
 \usage{
-argos_run_ad_hoc_verifications(script_path)
+argos_run_ad_hoc_verifications(rc_data, data_sets = NULL, script_path)
 }
 \arguments{
-\item{script_path}{A character vector of file paths to ad-hoc verification
-scripts. Each script is expected to create one or more objects produced by
-`argos_add_to_plausibility()`.}
+\item{rc_data}{A data frame-like object containing REDCap data. It is passed
+to sourced scripts as `redcap_data`.}
+
+\item{data_sets}{A named list of auxiliary data objects, or `NULL`. It is
+passed to sourced scripts as `datasets`.}
+
+\item{script_path}{A character vector of paths to `.R` scripts implementing
+ad-hoc plausibility checks.}
 }
 \value{
-A tibble created by row-binding all discovered ad-hoc verification
-  objects. It includes a `verif_fn` column (object name) plus the columns
-  returned by `argos_add_to_plausibility()`.
+A tibble produced by row-binding all collected ad-hoc verification
+  objects.
+  \describe{
+    \item{verif_fn}{A character string with the object name found after
+    sourcing each script.}
+    \item{verification}{A character string describing the verification, as
+    produced by [argos_add_to_plausibility()].}
+    \item{execution}{A character string indicating execution status
+    (typically `"ok"`).}
+    \item{n_issues}{An integer with the number of issues detected in each
+    verification object.}
+    \item{issues}{A list-column of tibbles containing issue-level rows.}
+  }
 }
 \description{
-Source one or more external R scripts and collect objects marked as
-  plausibility outputs.
+Sources ad-hoc verification scripts and collects objects marked for
+  inclusion in the plausibility output.
 
-  The function loads `.RData` files found in the project root, sources each
-  script path in the current environment, and then scans created objects for
-  the `add_to_plausibility` attribute set by
-  `argos_add_to_plausibility()`. Matching objects are combined into a single
-  tibble and tagged with their object name as `verif_fn`.
+  The function exposes `rc_data` and `data_sets` to sourced scripts using the
+  names `redcap_data` and `datasets`, respectively. After sourcing, it scans
+  objects in the evaluation environment and keeps those with the
+  `add_to_plausibility` attribute (typically created with
+  [argos_add_to_plausibility()]). Selected objects are combined and labeled
+  with their object name in `verif_fn`.
+}
+\details{
+Scripts are sourced in the current function environment (`local =
+  rlang::current_env()`). Objects are then inspected via their
+  `add_to_plausibility` attribute, so only outputs explicitly marked for
+  plausibility reporting are returned.
 }
 \seealso{
 [argos_add_to_plausibility()], [argos_check_plausibility()]

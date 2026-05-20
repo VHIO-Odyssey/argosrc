@@ -293,35 +293,59 @@ argos_add_to_plausibility <- function(
   issues_tbl
 }
 
-#' @title Run Ad-hoc Plausibility Verification Scripts
+#' @title Collect Ad-hoc Plausibility Results from Scripts
 #' @description
-#'   Source one or more external R scripts and collect objects marked as
-#'   plausibility outputs.
+#'   Sources ad-hoc verification scripts and collects objects marked for
+#'   inclusion in the plausibility output.
 #'
-#'   The function loads `.RData` files found in the project root, sources each
-#'   script path in the current environment, and then scans created objects for
-#'   the `add_to_plausibility` attribute set by
-#'   `argos_add_to_plausibility()`. Matching objects are combined into a single
-#'   tibble and tagged with their object name as `verif_fn`.
+#'   The function exposes `rc_data` and `data_sets` to sourced scripts using the
+#'   names `redcap_data` and `datasets`, respectively. After sourcing, it scans
+#'   objects in the evaluation environment and keeps those with the
+#'   `add_to_plausibility` attribute (typically created with
+#'   [argos_add_to_plausibility()]). Selected objects are combined and labeled
+#'   with their object name in `verif_fn`.
 #'
-#' @param script_path A character vector of file paths to ad-hoc verification
-#'   scripts. Each script is expected to create one or more objects produced by
-#'   `argos_add_to_plausibility()`.
+#' @param rc_data A data frame-like object containing REDCap data. It is passed
+#'   to sourced scripts as `redcap_data`.
+#' @param data_sets A named list of auxiliary data objects, or `NULL`. It is
+#'   passed to sourced scripts as `datasets`.
+#' @param script_path A character vector of paths to `.R` scripts implementing
+#'   ad-hoc plausibility checks.
 #'
-#' @return A tibble created by row-binding all discovered ad-hoc verification
-#'   objects. It includes a `verif_fn` column (object name) plus the columns
-#'   returned by `argos_add_to_plausibility()`.
+#' @return A tibble produced by row-binding all collected ad-hoc verification
+#'   objects.
+#'   \describe{
+#'     \item{verif_fn}{A character string with the object name found after
+#'     sourcing each script.}
+#'     \item{verification}{A character string describing the verification, as
+#'     produced by [argos_add_to_plausibility()].}
+#'     \item{execution}{A character string indicating execution status
+#'     (typically `"ok"`).}
+#'     \item{n_issues}{An integer with the number of issues detected in each
+#'     verification object.}
+#'     \item{issues}{A list-column of tibbles containing issue-level rows.}
+#'   }
+#'
+#' @details
+#'   Scripts are sourced in the current function environment (`local =
+#'   rlang::current_env()`). Objects are then inspected via their
+#'   `add_to_plausibility` attribute, so only outputs explicitly marked for
+#'   plausibility reporting are returned.
 #'
 #' @seealso [argos_add_to_plausibility()], [argos_check_plausibility()]
+#'
 #' @export
-argos_run_ad_hoc_verifications <- function(script_path) {
-  rdatas <- list.files(here::here(), ".RData$")
-  if (length(rdatas) != 0) {
-    load(rdatas)
-  }
+argos_run_ad_hoc_verifications <- function(
+  rc_data,
+  data_sets = NULL,
+  script_path
+) {
+  # Para evitar usar redcap_data y datasets como nombres de argumento.
+  # Además, esto asegura que al ejecutarse los scripts ad-hoc nunca terminen
+  # usando redcap_data o datasets del entorno global.
+  redcap_data <- rc_data
+  datasets <- data_sets
 
-  redcap_data <- rlang::env_get(rlang::current_env(), "redcap_data")
-  datasets <- rlang::env_get(rlang::current_env(), "datasets")
   purrr::walk(
     script_path,
     source,
@@ -349,15 +373,13 @@ argos_run_ad_hoc_verifications <- function(script_path) {
 
 #' @title Check REDCap Data for Plausibility Issues
 #' @description
-#'   Evaluate a REDCap export against the plausibility verification catalogue
-#'   stored in `plausibility_verifications_master`.
+#'   Runs the plausibility verification catalogue on a REDCap data export and
+#'   returns issue tables for each detected verification.
 #'
-#'   The function identifies candidate REDCap fields that match the argument
-#'   specification of each verification, optionally injects user-supplied
-#'   constant values, expands regular-expression field mappings to the matching
-#'   field names in the project metadata, and executes each verification
-#'   function. The result is a structured tibble describing which checks were
-#'   run, which ones could not be run, and the issues detected for each one.
+#'   The function identifies valid argument candidates from project metadata,
+#'   optionally augments constants with user-supplied values, executes
+#'   compatible verification functions, and appends ad-hoc verification outputs
+#'   when requested.
 #'
 #' @param rc_data A REDCap export object returned by `odytools::ody_rc_import()`.
 #'   It must be a data frame-like object with, at minimum, the attributes
@@ -375,32 +397,37 @@ argos_run_ad_hoc_verifications <- function(script_path) {
 #'   verification scripts, or `NULL`. When provided, scripts are sourced with
 #'   [argos_run_ad_hoc_verifications()] and their results are appended to the
 #'   automatic plausibility checks.
+#' @param data_sets A named list of auxiliary objects, or `NULL`. These objects
+#'   are passed to ad-hoc scripts via [argos_run_ad_hoc_verifications()] as
+#'   `datasets` and are ignored when `ad_hoc_verifications_path` is `NULL`.
 #'
-#' @return A tibble with one row per executed or unresolved verification. The
-#'   returned object includes the columns
+#' @return A tibble with one row per automatic verification (and additional rows
+#'   from ad-hoc scripts when provided).
 #'   \describe{
-#'     \item{verif_fn}{A character string identifying the verification function
-#'     to execute, built as `<id>_<version>`.}
-#'     \item{verif_arg}{A list-column containing the arguments passed to the
-#'     verification. Each element is a named list; some elements may be
-#'     character vectors when a metadata pattern matches multiple field names.
-#'     For ad-hoc verifications, this column may be `NA`.}
-#'     \item{verification}{A character string describing the verification in a
-#'     human-readable format.}
-#'     \item{execution}{A character string describing execution status. Values
-#'     are `"ok"` for successful execution, `"fail"` when execution raised an
-#'     error, and `"missing constants"` when required constants were not
-#'     available.}
-#'     \item{n_issues}{An integer giving the number of rows returned by the
-#'     verification. It is `NA` when a verification failed or could not be run
-#'     because constants were missing.}
-#'     \item{issues}{A list-column of data frames returned by each verification,
-#'     or `NULL` for failed executions.}
+#'     \item{verif_fn}{A character string identifying the verification function,
+#'     usually formatted as `<id>_<version>`.}
+#'     \item{verif_arg}{A list-column of arguments used for execution. For
+#'     unresolved checks this may contain missing values; for ad-hoc rows it can
+#'     be `NA`.}
+#'     \item{verification}{A character string with a human-readable
+#'     verification description.}
+#'     \item{execution}{A character string indicating execution status:
+#'     `"ok"`, `"fail"`, or `"missing constants"`.}
+#'     \item{n_issues}{An integer with the number of detected issues. It is
+#'     `NA` when execution fails or constants are missing.}
+#'     \item{issues}{A list-column of tibbles with issue-level records, or
+#'     `NULL` for failed verifications.}
 #'   }
 #'
-#'   The returned tibble also carries the attributes `redcap_project`, a tibble
-#'   with project identifiers extracted from `rc_data`, and
-#'   `redcap_import_date`, copied from `attr(rc_data, "import_date")`.
+#'   The returned tibble carries attributes
+#'   \describe{
+#'     \item{redcap_project}{A tibble with `project_id` and `project_title`.
+#'     Extracted from `attr(rc_data, "project_info")`.}
+#'     \item{redcap_import_date}{A scalar copied from
+#'     `attr(rc_data, "import_date")`.}
+#'     \item{reviewed_subjects}{A tibble of reviewed subject identifiers and,
+#'     when available, their site (`site`).}
+#'   }
 #'
 #' @details
 #'   Candidate arguments are first filtered by checking whether the referenced
@@ -411,18 +438,17 @@ argos_run_ad_hoc_verifications <- function(script_path) {
 #'
 #'   Verifications with unresolved constants are not executed. Instead, they are
 #'   returned with `execution = "missing constants"`. Executed verifications are
-#'   called with `do.call()`. Errors are caught and represented as
-#'   `execution = "fail"` with `n_issues = NA` and `issues = NULL`. When
-#'   `ad_hoc_verifications_path` is provided, ad-hoc results are appended after
-#'   automatic checks.
+#'   called with `do.call()`. Runtime errors in verification functions are caught
+#'   and represented as `execution = "fail"`, `n_issues = NA`, and
+#'   `issues = NULL`. When `ad_hoc_verifications_path` is provided, ad-hoc
+#'   results are appended after automatic checks.
 #'
-#' @seealso [argos_write_plausibility_report()],
-#'   [plausibility_verifications_master]
 #' @export
 argos_check_plausibility <- function(
   rc_data,
   constants_list = NULL,
-  ad_hoc_verifications_path = NULL
+  ad_hoc_verifications_path = NULL,
+  data_sets = NULL
 ) {
   rc_data_expr <- rlang::enexpr(rc_data)
 
@@ -688,6 +714,8 @@ argos_check_plausibility <- function(
 
   if (!is.null(ad_hoc_verifications_path)) {
     ad_hoc_verifications <- argos_run_ad_hoc_verifications(
+      rc_data,
+      data_sets,
       ad_hoc_verifications_path
     )
 

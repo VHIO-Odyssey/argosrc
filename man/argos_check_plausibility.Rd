@@ -7,7 +7,8 @@
 argos_check_plausibility(
   rc_data,
   constants_list = NULL,
-  ad_hoc_verifications_path = NULL
+  ad_hoc_verifications_path = NULL,
+  data_sets = NULL
 )
 }
 \arguments{
@@ -29,44 +30,48 @@ fields.}
 verification scripts, or `NULL`. When provided, scripts are sourced with
 [argos_run_ad_hoc_verifications()] and their results are appended to the
 automatic plausibility checks.}
+
+\item{data_sets}{A named list of auxiliary objects, or `NULL`. These objects
+are passed to ad-hoc scripts via [argos_run_ad_hoc_verifications()] as
+`datasets` and are ignored when `ad_hoc_verifications_path` is `NULL`.}
 }
 \value{
-A tibble with one row per executed or unresolved verification. The
-  returned object includes the columns
+A tibble with one row per automatic verification (and additional rows
+  from ad-hoc scripts when provided).
   \describe{
-    \item{verif_fn}{A character string identifying the verification function
-    to execute, built as `<id>_<version>`.}
-    \item{verif_arg}{A list-column containing the arguments passed to the
-    verification. Each element is a named list; some elements may be
-    character vectors when a metadata pattern matches multiple field names.
-    For ad-hoc verifications, this column may be `NA`.}
-    \item{verification}{A character string describing the verification in a
-    human-readable format.}
-    \item{execution}{A character string describing execution status. Values
-    are `"ok"` for successful execution, `"fail"` when execution raised an
-    error, and `"missing constants"` when required constants were not
-    available.}
-    \item{n_issues}{An integer giving the number of rows returned by the
-    verification. It is `NA` when a verification failed or could not be run
-    because constants were missing.}
-    \item{issues}{A list-column of data frames returned by each verification,
-    or `NULL` for failed executions.}
+    \item{verif_fn}{A character string identifying the verification function,
+    usually formatted as `<id>_<version>`.}
+    \item{verif_arg}{A list-column of arguments used for execution. For
+    unresolved checks this may contain missing values; for ad-hoc rows it can
+    be `NA`.}
+    \item{verification}{A character string with a human-readable
+    verification description.}
+    \item{execution}{A character string indicating execution status:
+    `"ok"`, `"fail"`, or `"missing constants"`.}
+    \item{n_issues}{An integer with the number of detected issues. It is
+    `NA` when execution fails or constants are missing.}
+    \item{issues}{A list-column of tibbles with issue-level records, or
+    `NULL` for failed verifications.}
   }
 
-  The returned tibble also carries the attributes `redcap_project`, a tibble
-  with project identifiers extracted from `rc_data`, and
-  `redcap_import_date`, copied from `attr(rc_data, "import_date")`.
+  The returned tibble carries attributes
+  \describe{
+    \item{redcap_project}{A tibble with `project_id` and `project_title`.
+    Extracted from `attr(rc_data, "project_info")`.}
+    \item{redcap_import_date}{A scalar copied from
+    `attr(rc_data, "import_date")`.}
+    \item{reviewed_subjects}{A tibble of reviewed subject identifiers and,
+    when available, their site (`site`).}
+  }
 }
 \description{
-Evaluate a REDCap export against the plausibility verification catalogue
-  stored in `plausibility_verifications_master`.
+Runs the plausibility verification catalogue on a REDCap data export and
+  returns issue tables for each detected verification.
 
-  The function identifies candidate REDCap fields that match the argument
-  specification of each verification, optionally injects user-supplied
-  constant values, expands regular-expression field mappings to the matching
-  field names in the project metadata, and executes each verification
-  function. The result is a structured tibble describing which checks were
-  run, which ones could not be run, and the issues detected for each one.
+  The function identifies valid argument candidates from project metadata,
+  optionally augments constants with user-supplied values, executes
+  compatible verification functions, and appends ad-hoc verification outputs
+  when requested.
 }
 \details{
 Candidate arguments are first filtered by checking whether the referenced
@@ -77,12 +82,8 @@ Candidate arguments are first filtered by checking whether the referenced
 
   Verifications with unresolved constants are not executed. Instead, they are
   returned with `execution = "missing constants"`. Executed verifications are
-  called with `do.call()`. Errors are caught and represented as
-  `execution = "fail"` with `n_issues = NA` and `issues = NULL`. When
-  `ad_hoc_verifications_path` is provided, ad-hoc results are appended after
-  automatic checks.
-}
-\seealso{
-[argos_write_plausibility_report()],
-  [plausibility_verifications_master]
+  called with `do.call()`. Runtime errors in verification functions are caught
+  and represented as `execution = "fail"`, `n_issues = NA`, and
+  `issues = NULL`. When `ad_hoc_verifications_path` is provided, ad-hoc
+  results are appended after automatic checks.
 }

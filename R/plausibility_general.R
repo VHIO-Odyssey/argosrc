@@ -745,6 +745,14 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
     glue::glue(
       "{verif_arg$date1a} or {verif_arg$date1b} (the first one) is before {verif_arg$date2} for all instances"
     )
+  } else if (verif_fn == "verif_2_1") {
+    glue::glue(
+      "The time between {verif_arg$date1} and {verif_arg$date2} is between {verif_arg$min_period} and {verif_arg$max_period} {verif_arg$unit}."
+    )
+  } else if (verif_fn == "verif_3_1") {
+    glue::glue(
+      "Variable(s) {stringr::str_c(verif_arg$var_name, collapse = ', ')} are equal to '{verif_arg$expected}'."
+    )
   } else if (verif_fn == "verif_4_1") {
     glue::glue(
       "Variable(s) {stringr::str_c(verif_arg$var_name, collapse = ', ')} have the same value across all instances."
@@ -808,12 +816,6 @@ argos_write_plausibility_report <- function(argos_results, file_path) {
     dplyr::mutate(
       verif_num = 1:dplyr::n(),
       .before = 1
-    ) |>
-    dplyr::mutate(
-      verif_arg = purrr::map_chr(
-        .data$verif_arg,
-        ~ stringr::str_c(names(.), " = ", unlist(.), collapse = "; ")
-      )
     )
 
   verif_num_issues <-

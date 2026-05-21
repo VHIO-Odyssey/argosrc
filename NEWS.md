@@ -1,21 +1,26 @@
-# argsrc 0.0.1.9000
+# argosrc 0.0.1.9000
+
+## New exported functions
+
+- Added `argos_add_to_plausibility()` to transform ad-hoc verification outputs into the nested plausibility result format used by `argos_check_plausibility()`.
+- Added `argos_run_ad_hoc_verifications()` to source ad-hoc scripts, detect objects marked with `add_to_plausibility`, and bind them into a unified plausibility result table.
+- Added `argos_write_forms_matrix()` to export form completion matrices to a timestamped Excel workbook (one worksheet per event), using color-coded cell formatting to highlight zero vs non-zero completion counts.
 
 ## Verification catalogue
 
-- Added `verif_1_3`: date A is not after date B across all instances of a
-  repeating form (interform). Date A is defined by selecting the minimum of two candidate dates.
+- Added `verif_1_3`: date A is not after date B across all instances of a repeating form, where date A is defined as the minimum of two candidate dates (`date1a`, `date1b`).
+- Updated `verif_1_2` to use the minimum `date1` value per subject when `date1` comes from multiple instances.
+- Updated `plausibility_verifications_master` descriptions for `verif_1_1` and `verif_1_2` and added the new `verif_1_3` entry.
 
-## Bug fixes and improvements
+## Plausibility workflow improvements
 
-- Enhanced error handling with `safe_filter()` utility to gracefully handle edge cases where branching logic variables are not available in the current form context.
-- Improved `verif_1_2` and `verif_1_3` to select the minimum date when multiple instances are available.
-- Optimized `argos_check_plausibility()` verification discovery and execution flow.
+- Enhanced `argos_check_plausibility()` with `ad_hoc_verifications_path` and `data_sets` to append ad-hoc verification results to automatic checks in one output.
+- Improved verification descriptions in `argos_check_plausibility()` for `verif_1_3` and corrected wording in `verif_7_1` descriptions.
+- Updated `argos_write_plausibility_report()` to include only verifications with `execution == "ok"`, simplify summary columns, and standardize issue sheet names.
 
-## Plausibility ad-hoc workflow
+## Project setup templates
 
-- Added `argos_add_to_plausibility()` to standardize ad-hoc verification outputs as nested plausibility issue tables that can be merged into the main plausibility results.
-- Added `argos_run_ad_hoc_verifications()` to source external verification scripts, detect objects marked for plausibility integration, and combine them into a single result table.
-- Enhanced `argos_check_plausibility()` with `ad_hoc_verifications_path` to append ad-hoc verification results to automatic checks in one unified output.
+- Updated `argos_add_folders()` to copy `*_plausibility_master.R` (renamed from `*_plausibility.R`) and include a new `*_plausibility_adhoc.R` template for ad-hoc checks.
 
 # argosrc 0.0.1
 

@@ -5,8 +5,12 @@ Version: 0.0.1.9000
 Authors@R:
     person("Eduardo", "García-Galea", , "eduardogarcia@vhio.net", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-4699-0786"))
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
+Description: A companion to 'odytools' for automated data quality review of
+    REDCap databases in clinical oncology research. Provides tools to assess
+    completeness (missing and unexpected values respecting branching logic) and
+    plausibility (cross-field consistency and temporal logic) across REDCap
+    forms and events. Results can be exported as timestamped Excel reports
+    suitable for inclusion in study monitoring workflows.
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true

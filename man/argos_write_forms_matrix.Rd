@@ -16,10 +16,6 @@ argos_write_forms_matrix(forms_count, file_path)
 ends with `.xlsx`, the timestamp is inserted before the extension;
 otherwise, `.xlsx` is appended.}
 }
-\value{
-Invisibly returns the value produced by [openxlsx::saveWorkbook()]
-  (typically `TRUE`) after writing the workbook to disk.
-}
 \description{
 Creates an `.xlsx` workbook with one worksheet per REDCap event, where each
   row is a subject and each column is a form label. Cell values are the number

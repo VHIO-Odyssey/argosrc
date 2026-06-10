@@ -425,6 +425,7 @@ argos_check_completeness <- function(
   }
 
   if (format == "raw") {
+    attr(completeness_result, "reviewed_forms") <- forms
     return(completeness_result)
   }
 

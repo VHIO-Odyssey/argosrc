@@ -1,10 +1,16 @@
-## **general**
+## **verification_process**
 
-Funciones para crear la estructura base de carpetas del proyecto y generar informes de verificación unificados.
+Funciones para la configuración inicial del proyecto, ejecución del proceso de verificación de plausibilidad y generación de informes.
 
 -   argos_add_folders [here, odytools::get_project_name, stringr]
--   argos_write_verification_report [dplyr, here, openxlsx2, stringr]
+-   filter_issues [dplyr, glue, tidyselect]
+-   find_valid_candidates [dplyr, purrr, stringr, tibble, tidyr, tidyselect]
+-   create_verification_description [glue, stringr]
+-   argos_check_verifications [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
 -   argos_add_completeness_results [dplyr, glue, purrr, stringr, tibble, tidyselect]
+-   argos_add_to_verifications [dplyr, glue, purrr, tidyr, tidyselect]
+-   argos_run_ad_hoc_verifications [dplyr, purrr, rlang]
+-   argos_write_verification_report [dplyr, here, openxlsx2, stringr]
 
 ## **completeness**
 
@@ -17,18 +23,7 @@ Funciones de verificación de completitud en datos REDCap.
 -   argos_count_forms [dplyr, odytools::ody_rc_select_form, purrr, tibble, tidyr]
 -   argos_write_forms_matrix [dplyr, here, openxlsx, purrr, stringr, tibble, tidyr]
 
-## **plausibility_general**
-
-Funciones generales para detección, ejecución y reporte de verificaciones de plausibilidad.
-
--   filter_issues [dplyr, glue, tidyselect]
--   find_valid_candidates [dplyr, purrr, stringr, tibble, tidyr, tidyselect]
--   argos_add_to_plausibility [dplyr, glue, purrr, tidyr, tidyselect]
--   argos_run_ad_hoc_verifications [dplyr, purrr, rlang]
--   argos_check_verifications [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
--   create_verification_description [glue, stringr]
-
-## **plausibility_verifications**
+## **verification_functions**
 
 Funciones específicas de verificación llamadas por `argos_check_verifications`.
 

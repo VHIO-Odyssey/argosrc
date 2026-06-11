@@ -8,7 +8,7 @@ argos_add_completeness_results(previous_results, completeness_results)
 }
 \arguments{
 \item{previous_results}{A tibble of verification results already accumulated,
-typically the output of [argos_check_plausibility()]. Must contain at
+typically the output of [argos_check_verifications()]. Must contain at
 least the columns `verif_fn`, `verification`, `execution`, `n_issues`, and
 `issues` (a list-column of tibbles).}
 
@@ -49,5 +49,5 @@ Converts the output of a completeness check into the standard verification
   `previous_results` and the combined tibble is returned.
 }
 \seealso{
-[argos_check_plausibility()], [argos_write_verification_report()]
+[argos_check_verifications()], [argos_write_verification_report()]
 }

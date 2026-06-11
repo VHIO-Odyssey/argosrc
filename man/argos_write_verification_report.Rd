@@ -8,7 +8,7 @@ argos_write_verification_report(argos_results, file_path)
 }
 \arguments{
 \item{argos_results}{A tibble of verification results, typically the combined
-output of \code{argos_check_plausibility()} and
+output of \code{argos_check_verifications()} and
 \code{argos_add_completeness_results()}. It must carry at least the columns
 \code{verif_fn}, \code{verification}, \code{n_issues}, and \code{issues}
 (a list-column of tibbles), and is expected to have the attributes
@@ -56,5 +56,5 @@ Only rows where \code{execution == "ok"} are included. Verifications are
   without separators other than the underscore between date and time.
 }
 \seealso{
-[argos_check_plausibility()], [argos_add_completeness_results()]
+[argos_check_verifications()], [argos_add_completeness_results()]
 }

@@ -2,7 +2,7 @@
 
 ## New exported functions
 
-- Added `argos_add_to_plausibility()` to transform ad-hoc verification outputs into the nested plausibility result format used by `argos_check_plausibility()`.
+- Added `argos_add_to_plausibility()` to transform ad-hoc verification outputs into the nested plausibility result format used by `argos_check_verifications()`.
 - Added `argos_run_ad_hoc_verifications()` to source ad-hoc scripts, detect objects marked with `add_to_plausibility`, and bind them into a unified plausibility result table.
 - Added `argos_write_forms_matrix()` to export form completion matrices to a timestamped Excel workbook (one worksheet per event), using color-coded cell formatting to highlight zero vs non-zero completion counts.
 - Added `argos_write_verification_report()` to export a unified verification report (plausibility + completeness) to a timestamped Excel workbook. Supersedes `argos_write_plausibility_report()`, which has been removed.
@@ -16,8 +16,8 @@
 
 ## Plausibility workflow improvements
 
-- Enhanced `argos_check_plausibility()` with `ad_hoc_verifications_path` and `data_sets` to append ad-hoc verification results to automatic checks in one output.
-- Improved verification descriptions in `argos_check_plausibility()` for `verif_1_3` and corrected wording in `verif_7_1` descriptions.
+- Enhanced `argos_check_verifications()` with `ad_hoc_verifications_path` and `data_sets` to append ad-hoc verification results to automatic checks in one output.
+- Improved verification descriptions in `argos_check_verifications()` for `verif_1_3` and corrected wording in `verif_7_1` descriptions.
 
 ## Completeness improvements
 
@@ -46,7 +46,7 @@ First release of **argosrc** (Automatic Review and Governance for Oncology Studi
 
 ## Plausibility
 
-- Added `argos_check_plausibility()` to evaluate a REDCap export against the built-in plausibility verification catalogue (`plausibility_verifications_master`). The function automatically identifies applicable verifications by matching field metadata (type, choices, validation), respects intraform, interform, and multiinstance complexity constraints, and supports user-supplied constant arguments via `constants_list`. Results include execution status (`"ok"`, `"fail"`, `"missing constants"`), issue counts, and issue detail tables.
+- Added `argos_check_verifications()` to evaluate a REDCap export against the built-in plausibility verification catalogue (`plausibility_verifications_master`). The function automatically identifies applicable verifications by matching field metadata (type, choices, validation), respects intraform, interform, and multiinstance complexity constraints, and supports user-supplied constant arguments via `constants_list`. Results include execution status (`"ok"`, `"fail"`, `"missing constants"`), issue counts, and issue detail tables.
 - Added `argos_write_plausibility_report()` to export plausibility results to a timestamped Excel workbook. The workbook includes a project info sheet, a reviewed subjects sheet, a verifications summary sheet, and one additional sheet per verification with detected issues.
 
 ## Verification catalogue

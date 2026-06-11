@@ -6,10 +6,10 @@
 # a logical '.ok' column indicating whether each row passed the check. Rows
 # where '.ok' is FALSE or NA are reported as issues.
 #
-# When this script is sourced by argos_check_plausibility() via the
+# When this script is sourced by argos_check_verifications() via the
 # 'ad_hoc_verifications_path' argument, two objects are automatically available:
 #
-#   redcap_data — the REDCap data object passed to argos_check_plausibility().
+#   redcap_data — the REDCap data object passed to argos_check_verifications().
 #   datasets    — the named list passed via the 'data_sets' argument (or NULL).
 #
 # WORKFLOW FOR EACH VERIFICATION
@@ -28,7 +28,7 @@
 #      - issue_text: a glue template string that builds the issue message for
 #        each failing row. Reference column names with {column_name}.
 #
-# 3. Assign the result to a variable. argos_check_plausibility() will
+# 3. Assign the result to a variable. argos_check_verifications() will
 #    automatically detect any object in this script that has been created with
 #    argos_add_to_plausibility() and include it in the final results.
 #

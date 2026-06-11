@@ -228,9 +228,9 @@ find_valid_candidates <- function(
 }
 
 
-#' @title Check REDCap Data for Plausibility Issues
+#' @title Check REDCap Data for Verification Issues
 #' @description
-#'   Runs the plausibility verification catalogue on a REDCap data export and
+#'   Runs the verification catalogue on a REDCap data export and
 #'   returns issue tables for each detected verification.
 #'
 #'   The function identifies valid argument candidates from project metadata,
@@ -253,7 +253,7 @@ find_valid_candidates <- function(
 #' @param ad_hoc_verifications_path A character vector of paths to ad-hoc
 #'   verification scripts, or `NULL`. When provided, scripts are sourced with
 #'   [argos_run_ad_hoc_verifications()] and their results are appended to the
-#'   automatic plausibility checks.
+#'   automatic verification checks.
 #' @param data_sets A named list of auxiliary objects, or `NULL`. These objects
 #'   are passed to ad-hoc scripts via [argos_run_ad_hoc_verifications()] as
 #'   `datasets` and are ignored when `ad_hoc_verifications_path` is `NULL`.
@@ -301,7 +301,7 @@ find_valid_candidates <- function(
 #'   results are appended after automatic checks.
 #'
 #' @export
-argos_check_plausibility <- function(
+argos_check_verifications <- function(
   rc_data,
   constants_list = NULL,
   ad_hoc_verifications_path = NULL,

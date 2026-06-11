@@ -75,7 +75,7 @@ argos_add_folders <- function() {
 #'   }
 #'
 #' @param argos_results A tibble of verification results, typically the combined
-#'   output of \code{argos_check_plausibility()} and
+#'   output of \code{argos_check_verifications()} and
 #'   \code{argos_add_completeness_results()}. It must carry at least the columns
 #'   \code{verif_fn}, \code{verification}, \code{n_issues}, and \code{issues}
 #'   (a list-column of tibbles), and is expected to have the attributes
@@ -103,7 +103,7 @@ argos_add_folders <- function() {
 #'   \code{redcap_import_date} attribute using the pattern \code{YYYYMMDD_HHMM}
 #'   without separators other than the underscore between date and time.
 #'
-#' @seealso [argos_check_plausibility()], [argos_add_completeness_results()]
+#' @seealso [argos_check_verifications()], [argos_add_completeness_results()]
 #' @export
 argos_write_verification_report <- function(argos_results, file_path) {
   results_excel <-
@@ -207,7 +207,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
 #'   `previous_results` and the combined tibble is returned.
 #'
 #' @param previous_results A tibble of verification results already accumulated,
-#'   typically the output of [argos_check_plausibility()]. Must contain at
+#'   typically the output of [argos_check_verifications()]. Must contain at
 #'   least the columns `verif_fn`, `verification`, `execution`, `n_issues`, and
 #'   `issues` (a list-column of tibbles).
 #' @param completeness_results A tibble produced by a completeness check
@@ -235,7 +235,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
 #'       with a human-readable description of the missing field.}
 #'   }
 #'
-#' @seealso [argos_check_plausibility()], [argos_write_verification_report()]
+#' @seealso [argos_check_verifications()], [argos_write_verification_report()]
 #' @export
 argos_add_completeness_results <- function(
   previous_results,
@@ -304,7 +304,7 @@ argos_add_completeness_results <- function(
 #'   Create a verification-result tibble from an ad-hoc verification output.
 #'   The function filters rows where `.ok` is `FALSE` or `NA`, builds a human-
 #'   readable issue string with `glue::glue()`, and reshapes the output to the
-#'   structure expected by `argos_check_plausibility()`.
+#'   structure expected by `argos_check_verifications()`.
 #'
 #' @param verified_data A data frame or tibble containing verification results.
 #'   It must include an `.ok` logical column, the subject identifier in the
@@ -328,7 +328,7 @@ argos_add_completeness_results <- function(
 #'   The returned object has attribute `add_to_verifications = TRUE`, used by
 #'   `argos_run_ad_hoc_verifications()` to discover ad-hoc outputs.
 #'
-#' @seealso [argos_run_ad_hoc_verifications()], [argos_check_plausibility()]
+#' @seealso [argos_run_ad_hoc_verifications()], [argos_check_verifications()]
 #' @export
 argos_add_to_verifications <- function(
   verified_data,
@@ -404,7 +404,7 @@ argos_add_to_verifications <- function(
 #'   `add_to_verifications` attribute, so only outputs explicitly marked for
 #'   verification reporting are returned.
 #'
-#' @seealso [argos_add_to_verifications()], [argos_check_plausibility()]
+#' @seealso [argos_add_to_verifications()], [argos_check_verifications()]
 #'
 #' @export
 argos_run_ad_hoc_verifications <- function(

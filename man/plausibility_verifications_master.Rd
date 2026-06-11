@@ -38,6 +38,6 @@ A data frame with variables:
 plausibility_verifications_master
 }
 \description{
-Dataset containing information on plausibility verifications. The function `argos_check_plausibility` uses this information to determine the applicable verifications for the current REDCap database.
+Dataset containing information on plausibility verifications. The function `argos_check_verifications` uses this information to determine the applicable verifications for the current REDCap database.
 }
 \keyword{datasets}

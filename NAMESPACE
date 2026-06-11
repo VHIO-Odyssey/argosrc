@@ -2,9 +2,9 @@
 
 export(argos_add_completeness_results)
 export(argos_add_folders)
-export(argos_add_to_plausibility)
+export(argos_add_to_verifications)
 export(argos_check_completeness)
-export(argos_check_plausibility)
+export(argos_check_verifications)
 export(argos_count_forms)
 export(argos_run_ad_hoc_verifications)
 export(argos_write_forms_matrix)

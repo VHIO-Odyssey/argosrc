@@ -25,12 +25,12 @@ Funciones generales para detección, ejecución y reporte de verificaciones de p
 -   find_valid_candidates [dplyr, purrr, stringr, tibble, tidyr, tidyselect]
 -   argos_add_to_plausibility [dplyr, glue, purrr, tidyr, tidyselect]
 -   argos_run_ad_hoc_verifications [dplyr, purrr, rlang]
--   argos_check_plausibility [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
+-   argos_check_verifications [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
 -   create_verification_description [glue, stringr]
 
 ## **plausibility_verifications**
 
-Funciones específicas de verificación llamadas por `argos_check_plausibility`.
+Funciones específicas de verificación llamadas por `argos_check_verifications`.
 
 -   verif_1_1 [filter_issues, dplyr, glue, odytools::ody_rc_format, odytools::ody_rc_select]
 -   verif_1_2 [filter_issues, dplyr, glue, odytools::ody_rc_format, odytools::ody_rc_select, stringr]

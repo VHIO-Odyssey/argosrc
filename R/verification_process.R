@@ -991,15 +991,29 @@ argos_write_verification_report <- function(argos_results, file_path) {
   results_excel <-
     argos_results |>
     dplyr::filter(.data$execution == "ok") |>
-    dplyr::arrange(.data$verif_fn) |>
     dplyr::mutate(
-      verif_num = 1:dplyr::n(),
       verif_type = dplyr::case_when(
-        stringr::str_detect(.data$verif_fn, "verif") ~ "plausibility",
-        verif_fn == "completeness" ~ "completeness",
-      ),
+        stringr::str_detect(
+          .data$verif_fn,
+          "^verif_\\d+_\\d+$"
+        ) ~ "auto_verification",
+        .data$verif_fn == "completeness" ~ "completeness",
+        .default = "adhoc_verification"
+      ) |>
+        factor(
+          levels = c(
+            "completeness",
+            "auto_verification",
+            "adhoc_verification"
+          )
+        ),
       .before = 1
+    ) |>
+    dplyr::arrange(.data$verif_type, .data$verif_fn) |>
+    dplyr::mutate(
+      verif_num = dplyr::row_number()
     )
+
   verif_num_issues <-
     results_excel |>
     dplyr::filter(.data$n_issues > 0) |>

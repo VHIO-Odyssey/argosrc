@@ -1,8 +1,8 @@
 # ==============================================================================
-# Plausibility checks — ad-hoc verifications
+# Ad-hoc verifications
 # ==============================================================================
 #
-# Define custom plausibility checks in this script. Each check is a tibble with
+# Define custom verifications in this script. Each check is a tibble with
 # a logical '.ok' column indicating whether each row passed the check. Rows
 # where '.ok' is FALSE or NA are reported as issues.
 #
@@ -22,7 +22,7 @@
 #      - A logical '.ok' column: TRUE = check passed, FALSE = issue detected,
 #        NA = check could not be evaluated (treated as an issue).
 #
-# 2. Pass the tibble to argos_add_to_plausibility(), providing:
+# 2. Pass the tibble to argos_add_to_verifications(), providing:
 #      - verification_description: a short text describing what is being
 #        checked. This appears in the summary sheet of the Excel report.
 #      - issue_text: a glue template string that builds the issue message for
@@ -30,7 +30,7 @@
 #
 # 3. Assign the result to a variable. argos_check_plausibility() will
 #    automatically detect any object in this script that has been created with
-#    argos_add_to_plausibility() and include it in the final results.
+#    argos_add_to_verifications() and include it in the final results.
 #
 # You can define as many verifications as needed. Variable names are used
 # internally as verification identifiers (verif_fn column in the result).

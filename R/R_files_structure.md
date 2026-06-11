@@ -1,8 +1,10 @@
 ## **general**
 
-Funciones para crear la estructura base de carpetas del proyecto.
+Funciones para crear la estructura base de carpetas del proyecto y generar informes de verificación unificados.
 
 -   argos_add_folders [here, odytools::get_project_name, stringr]
+-   argos_write_verification_report [dplyr, here, openxlsx2, stringr]
+-   argos_add_completeness_results [dplyr, glue, purrr, stringr, tibble, tidyselect]
 
 ## **completeness**
 
@@ -25,7 +27,6 @@ Funciones generales para detección, ejecución y reporte de verificaciones de p
 -   argos_run_ad_hoc_verifications [dplyr, purrr, rlang]
 -   argos_check_plausibility [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
 -   create_verification_description [glue, stringr]
--   argos_write_plausibility_report [dplyr, here, openxlsx2, stringr]
 
 ## **plausibility_verifications**
 

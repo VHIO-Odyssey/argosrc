@@ -5,3 +5,6 @@
 sandbox/
 *.xlsx
 .vscode
+
+/.quarto/
+**/*.quarto_ipynb

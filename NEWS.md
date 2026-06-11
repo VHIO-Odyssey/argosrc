@@ -5,6 +5,8 @@
 - Added `argos_add_to_plausibility()` to transform ad-hoc verification outputs into the nested plausibility result format used by `argos_check_plausibility()`.
 - Added `argos_run_ad_hoc_verifications()` to source ad-hoc scripts, detect objects marked with `add_to_plausibility`, and bind them into a unified plausibility result table.
 - Added `argos_write_forms_matrix()` to export form completion matrices to a timestamped Excel workbook (one worksheet per event), using color-coded cell formatting to highlight zero vs non-zero completion counts.
+- Added `argos_write_verification_report()` to export a unified verification report (plausibility + completeness) to a timestamped Excel workbook. Supersedes `argos_write_plausibility_report()`, which has been removed.
+- Added `argos_add_completeness_results()` to convert the output of `argos_check_completeness()` into the standard verification row format and append it to a plausibility results tibble, enabling a single combined report via `argos_write_verification_report()`.
 
 ## Verification catalogue
 
@@ -16,7 +18,14 @@
 
 - Enhanced `argos_check_plausibility()` with `ad_hoc_verifications_path` and `data_sets` to append ad-hoc verification results to automatic checks in one output.
 - Improved verification descriptions in `argos_check_plausibility()` for `verif_1_3` and corrected wording in `verif_7_1` descriptions.
-- Updated `argos_write_plausibility_report()` to include only verifications with `execution == "ok"`, simplify summary columns, and standardize issue sheet names.
+
+## Completeness improvements
+
+- `argos_check_completeness()` now attaches a `reviewed_forms` character attribute to its raw output, listing the REDCap form names that were reviewed. This attribute is required by `argos_add_completeness_results()`.
+
+## Breaking changes
+
+- Removed `argos_write_plausibility_report()`. Use `argos_write_verification_report()` instead.
 
 ## Project setup templates
 

@@ -1,7 +1,7 @@
 #' @title Build Argos Quality Folders and Templates
 #' @description
 #'   Create the `quality/argosrc` folder structure in the current project and
-#'   copy default completeness and plausibility analysis templates into it.
+#'   copy default verification templates into it.
 #'
 #'   Use this function when initializing Argos review scaffolding in a project
 #'   that already contains a top-level `quality` directory.
@@ -15,69 +15,47 @@
 #'
 #' @details
 #'   The function creates the following directories under the current project
-#'   root: `quality/argosrc`, `quality/argosrc/completeness`, and
-#'   `quality/argosrc/plausibility`.
+#'   root: `quality/argosrc` and `quality/argosrc/verification_results`.
 #'
-#'   It then copies bundled templates from the package `inst/argos_templates`
-#'   directory and renames them using the project name obtained from
+#'   It then copies bundled templates from the package `inst/argosrc_templates`
+#'   directory (`verifications_master.R` and `verifications_adhoc.R`) and
+#'   renames them using the project name obtained from
 #'   `odytools:::get_project_name()`.
 #'
 #' @export
 argos_add_folders <- function() {
   folders <- list.dirs(here::here(), recursive = FALSE) |>
     basename()
-
   if (!any(folders == "quality")) {
     stop("No 'quality' folder found in this project")
   }
-
   dir.create(here::here("quality", "argosrc"))
-  dir.create(here::here("quality", "argosrc", "completeness"))
-  dir.create(here::here("quality", "argosrc", "plausibility"))
-
+  dir.create(here::here("quality", "argosrc", "verification_results"))
   file.copy(
     system.file(
       "argosrc_templates",
-      "completeness.R",
+      "verifications_master.R",
       package = "argosrc"
     ),
     here::here(
       "quality",
       "argosrc",
-      "completeness",
-      stringr::str_c(odytools:::get_project_name(), "_completeness.R")
+      stringr::str_c(odytools:::get_project_name(), "_verifications_master.R")
     )
   )
-
   file.copy(
     system.file(
       "argosrc_templates",
-      "plausibility_master.R",
+      "verifications_adhoc.R",
       package = "argosrc"
     ),
     here::here(
       "quality",
       "argosrc",
-      "plausibility",
-      stringr::str_c(odytools:::get_project_name(), "_plausibility_master.R")
-    )
-  )
-
-  file.copy(
-    system.file(
-      "argosrc_templates",
-      "plausibility_adhoc.R",
-      package = "argosrc"
-    ),
-    here::here(
-      "quality",
-      "argosrc",
-      "plausibility",
-      stringr::str_c(odytools:::get_project_name(), "_plausibility_adhoc.R")
+      stringr::str_c(odytools:::get_project_name(), "_verifications_adhoc.R")
     )
   )
 }
-
 #' @title Write an Excel Verification Report
 #' @description
 #'   Create an Excel workbook summarising verification results (plausibility and
@@ -140,19 +118,15 @@ argos_write_verification_report <- function(argos_results, file_path) {
       ),
       .before = 1
     )
-
   verif_num_issues <-
     results_excel |>
     dplyr::filter(.data$n_issues > 0) |>
     dplyr::pull(.data$verif_num)
-
   project_info <- attr(argos_results, "redcap_project") |>
     dplyr::mutate(
       import_date = attr(argos_results, "redcap_import_date")
     )
-
   reviewed_subjects <- attr(argos_results, "reviewed_subjects")
-
   wb <-
     openxlsx2::wb_workbook() |>
     openxlsx2::wb_add_worksheet("project_info") |>
@@ -188,7 +162,6 @@ argos_write_verification_report <- function(argos_results, file_path) {
       cols = 1:ncol(results_excel),
       widths = "auto"
     )
-
   for (i in verif_num_issues) {
     issues <- results_excel$issues[[i]]
     sheet_name <- paste0("verif_", results_excel$verif_num[i])
@@ -202,12 +175,10 @@ argos_write_verification_report <- function(argos_results, file_path) {
         widths = "auto"
       )
   }
-
   import_date <- attr(argos_results, "redcap_import_date") |>
     stringr::str_extract("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}") |>
     stringr::str_replace_all(" ", "_") |>
     stringr::str_remove_all("[-:]")
-
   if (stringr::str_detect(file_path, "\\.xlsx$")) {
     final_file_path <- stringr::str_replace(
       file_path,
@@ -222,10 +193,8 @@ argos_write_verification_report <- function(argos_results, file_path) {
       ".xlsx"
     )
   }
-
   openxlsx2::wb_save(wb, here::here(final_file_path))
 }
-
 #' @title Append Completeness Results to a Verification Table
 #' @description
 #'   Converts the output of a completeness check into the standard verification
@@ -292,7 +261,6 @@ argos_add_completeness_results <- function(
         issue = glue::glue("{variable} is empty.")
       )
   }
-
   completeness_issue <-
     completeness_issue_v0 |>
     dplyr::select(
@@ -305,14 +273,12 @@ argos_add_completeness_results <- function(
       )),
       .data$issue
     )
-
   completeness_nested <-
     purrr::map(
       attr(completeness_results, "reviewed_forms"),
       function(x) {
         issues <- completeness_issue |>
           dplyr::filter(stringr::str_detect(.data$redcap_form_name, x))
-
         tibble::tibble(
           verif_fn = "completeness",
           verification = stringr::str_c(
@@ -327,7 +293,6 @@ argos_add_completeness_results <- function(
       }
     ) |>
     purrr::list_rbind()
-
   dplyr::bind_rows(
     previous_results,
     completeness_nested

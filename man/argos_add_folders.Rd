@@ -16,17 +16,17 @@ A logical scalar indicating whether the last template file copy
 }
 \description{
 Create the `quality/argosrc` folder structure in the current project and
-  copy default completeness and plausibility analysis templates into it.
+  copy default verification templates into it.
 
   Use this function when initializing Argos review scaffolding in a project
   that already contains a top-level `quality` directory.
 }
 \details{
 The function creates the following directories under the current project
-  root: `quality/argosrc`, `quality/argosrc/completeness`, and
-  `quality/argosrc/plausibility`.
+  root: `quality/argosrc` and `quality/argosrc/verification_results`.
 
-  It then copies bundled templates from the package `inst/argos_templates`
-  directory and renames them using the project name obtained from
+  It then copies bundled templates from the package `inst/argosrc_templates`
+  directory (`verifications_master.R` and `verifications_adhoc.R`) and
+  renames them using the project name obtained from
   `odytools:::get_project_name()`.
 }

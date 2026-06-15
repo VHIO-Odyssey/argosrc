@@ -39,3 +39,26 @@ A tibble summarizing missing data per variable and form.
 This function verifies completeness of specified forms in REDCap data,
 considering user-defined missing values and branching logic conditions.
 }
+\details{
+## Branching logic resolution
+
+REDCap branching logic is translated into R expressions and evaluated
+row-by-row to determine whether each variable is expected to be present for
+each case.
+
+The evaluation follows a conservative approach with two distinct failure
+modes:
+
+- **Expression error** (e.g. branching logic contains invalid or not yet
+  supported expressions): the condition is assumed to be met
+  for all cases, so completeness is checked for everyone.
+
+- **Unresolvable branching** (the variables referenced in the branching
+  logic are themselves missing for a given case): the condition evaluates to
+  `NA` for that case. The function then applies the conservative rule:
+  - If the target variable is **absent** -> flagged as `missing`.
+  - If the target variable is **present** -> flagged as `unexpected`.
+
+  This ensures that cases with ambiguous branching logic are always reviewed,
+  rather than silently ignored.
+}

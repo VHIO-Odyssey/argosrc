@@ -18,7 +18,7 @@ Funciones de verificación de completitud en datos REDCap.
 
 -   filter_condition [dplyr]
 -   get_conditions_from_metadata [dplyr, labelled, stringr]
--   verify_completeness_form [safe_filter, dplyr, labelled, odytools::ody_rc_select, odytools::ody_rc_select_form, purrr, stringr, tibble, tidyselect]
+-   verify_completeness_form [safe_condition_definition, dplyr, labelled, odytools::ody_rc_select, odytools::ody_rc_select_form, purrr, stringr, tibble, tidyselect]
 -   argos_check_completeness [get_conditions_from_metadata, verify_completeness_form, dplyr, purrr, rlang, stringr, tidyselect]
 -   argos_count_forms [dplyr, odytools::ody_rc_select_form, purrr, tibble, tidyr]
 -   argos_write_forms_matrix [dplyr, here, openxlsx, purrr, stringr, tibble, tidyr]
@@ -41,7 +41,7 @@ Funciones específicas de verificación llamadas por `argos_check_verifications`
 
 Funciones utilitarias internas.
 
--   safe_filter [dplyr]
+-   safe_condition_definition [dplyr]
 
 ## **data**
 

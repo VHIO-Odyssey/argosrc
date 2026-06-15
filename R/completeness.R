@@ -268,10 +268,16 @@ verify_completeness_form <- function(
       if (check_for %in% c("missing", "both")) {
         missing_values <-
           expanded_form |>
-          # Safe version. If the filter fails (mainly because the variables
-          # declared in current_condition do not belong to the current form) it
-          # returns the original unfiltered form.
-          safe_filter(!!current_condition) |>
+          # Safe way to define is the branching logic condition is met. If the
+          # logic fails (mainly because the variables declared in
+          # current_condition do not belong to the current form) it assumes the
+          # condition is met for all cases.
+          # It returs NA for dose case where the variables involved in the
+          # branching logic are missing. So, if a branching logic can not be
+          # resolved it is assumed the condition is met and the completeness
+          # check must be performed.
+          safe_condition_definition(current_condition) |>
+          dplyr::filter_out(!.data$meets_condition) |>
           dplyr::filter(na_fn(!!current_variable)) |>
           dplyr::mutate(
             variable = x,
@@ -307,10 +313,15 @@ verify_completeness_form <- function(
       if (check_for %in% c("unexpected", "both")) {
         unexpected_values <-
           expanded_form |>
-          # Safe version. If the filter fails (mainly because the variables
-          # declared in current_condition do not belong to the current form) it
-          # returns the original unfiltered form.
-          safe_filter(!(!!current_condition)) |>
+          # Safe way to define if the branching logic condition is met. If the
+          # logic fails (mainly because the variables declared in
+          # current_condition do not belong to the current form) it assumes the
+          # condition is met for all cases. It returns NA for those cases where
+          # the variables involved in the branching logic are missing. So, if a
+          # branching logic can not be resolved it is assumed the condition is
+          # met and the completeness check must be performed.
+          safe_condition_definition(current_condition) |>
+          dplyr::filter_out(.data$meets_condition) |>
           dplyr::filter(!is.na(!!current_variable)) |>
           dplyr::mutate(
             variable = x,
@@ -369,6 +380,30 @@ verify_completeness_form <- function(
 #' @param format Character, output format: `"raw"` returns raw results; `"friendly"` returns a more readable summary with labels and descriptive names.
 #'
 #' @return A tibble summarizing missing data per variable and form.
+#'
+#' @details
+#' ## Branching logic resolution
+#'
+#' REDCap branching logic is translated into R expressions and evaluated
+#' row-by-row to determine whether each variable is expected to be present for
+#' each case.
+#'
+#' The evaluation follows a conservative approach with two distinct failure
+#' modes:
+#'
+#' - **Expression error** (e.g. branching logic contains invalid or not yet
+#'   supported expressions): the condition is assumed to be met
+#'   for all cases, so completeness is checked for everyone.
+#'
+#' - **Unresolvable branching** (the variables referenced in the branching
+#'   logic are themselves missing for a given case): the condition evaluates to
+#'   `NA` for that case. The function then applies the conservative rule:
+#'   - If the target variable is **absent** -> flagged as `missing`.
+#'   - If the target variable is **present** -> flagged as `unexpected`.
+#'
+#'   This ensures that cases with ambiguous branching logic are always reviewed,
+#'   rather than silently ignored.
+#'
 #' @export
 argos_check_completeness <- function(
   rc_data,

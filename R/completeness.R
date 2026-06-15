@@ -61,6 +61,8 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
             "(\\[[^\\]\\[\\(\\)]+)\\(([^\\]\\[\\(\\)]+)\\)\\]",
             "\\1___\\2]"
           ) |>
+          # Lowercase suffix after ___ to ensure consistency
+          stringr::str_replace_all("(?<=___)\\w+", tolower) |>
           stringr::str_replace_all(
             # RedCap empty to regular R na
             "\\[([^\\[]+)\\] *<> *['\"]{2}",

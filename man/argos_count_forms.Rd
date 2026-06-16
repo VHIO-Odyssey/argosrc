@@ -2,20 +2,38 @@
 % Please edit documentation in R/completeness.R
 \name{argos_count_forms}
 \alias{argos_count_forms}
-\title{Count form completions in REDCap data}
+\title{Compute Per-Subject Form Counts Across Events}
 \usage{
-argos_count_forms(rc_data, save_path = NULL)
+argos_count_forms(rc_data)
 }
 \arguments{
-\item{rc_data}{A REDCap data frame imported with  `odytools::ody_rc_import()`}
-
-\item{save_path}{Optional path to save the output Excel file; if NULL, no file is saved.}
+\item{rc_data}{A data frame returned by `odytools::ody_rc_import()`, with
+REDCap metadata stored as attributes. It must include `id_var`, `subjects`,
+`forms`, `events` (for longitudinal projects), and `forms_events_mapping`.}
 }
 \value{
-A list of tibbles, each containing counts of completed forms per record for a specific event.
+A tibble with one row per subject-event-form combination and columns:
+  `id_var` (project record identifier column), `redcap_event_name`,
+  `redcap_form_name`, and `n` (integer count of observed form instances).
+  For non-longitudinal projects, `redcap_event_name` is `NA`.
+
+  The returned tibble includes attributes copied from `rc_data`:
+  `events`, `forms`, `redcap_import_date`, and `project_info`.
 }
 \description{
-This function counts the number of records per form and event in REDCap data.
-It returns a list of data frames, one per event, with counts of forms completed by record.
-Optionally, the result can be saved as an Excel file with one sheet per event.
+Builds a completion matrix from REDCap data by counting how many times each
+  form appears for each subject within each event.
+
+  The function ensures the expected subject-event-form structure is complete
+  by joining observed counts with the form-event mapping stored in
+  `rc_data` attributes, filling missing combinations with `0`.
+}
+\details{
+For each form, the function extracts form-level records with
+  [odytools::ody_rc_select_form()], counts rows by subject and event, and
+  expands to all expected subject-event combinations defined by
+  `forms_events_mapping`. Unobserved combinations are assigned `n = 0`.
+}
+\seealso{
+[argos_write_forms_matrix()]
 }

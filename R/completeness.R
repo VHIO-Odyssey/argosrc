@@ -61,6 +61,8 @@ get_conditions_from_metadata <- function(metadata, missing_codes) {
             "(\\[[^\\]\\[\\(\\)]+)\\(([^\\]\\[\\(\\)]+)\\)\\]",
             "\\1___\\2]"
           ) |>
+          # Lowercase suffix after ___ to ensure consistency
+          stringr::str_replace_all("(?<=___)\\w+", tolower) |>
           stringr::str_replace_all(
             # RedCap empty to regular R na
             "\\[([^\\[]+)\\] *<> *['\"]{2}",
@@ -266,14 +268,23 @@ verify_completeness_form <- function(
       if (check_for %in% c("missing", "both")) {
         missing_values <-
           expanded_form |>
-          # Safe version. If the filter fails (mainly because the variables
-          # declared in current_condition do not belong to the current form) it
-          # returns the original unfiltered form.
-          safe_filter(!!current_condition) |>
+          # Safe way to define if the branching logic condition is met. If the
+          # logic fails  it assumes the condition is met for all cases.
+          # It returns NA for those cases where the variables involved in the
+          # branching logic are missing. So, if a branching logic can not be
+          # resolved it is assumed the condition is met and the completeness
+          # check must be performed.
+          safe_condition_definition(current_condition) |>
+          dplyr::filter_out(!.data$meets_condition) |>
           dplyr::filter(na_fn(!!current_variable)) |>
           dplyr::mutate(
             variable = x,
             condition = current_condition_label,
+            evaluable_condition = dplyr::if_else(
+              is.na(.data$meets_condition),
+              "No",
+              "Yes"
+            ),
             completeness_issue = dplyr::case_when(
               labelled::is_regular_na(!!current_variable) ~ "Regular missing",
               labelled::is_user_na(!!current_variable) ~ "User missing",
@@ -295,6 +306,7 @@ verify_completeness_form <- function(
             )),
             "variable",
             "condition",
+            "evaluable_condition",
             "completeness_issue",
             "missing_value"
           )
@@ -305,14 +317,23 @@ verify_completeness_form <- function(
       if (check_for %in% c("unexpected", "both")) {
         unexpected_values <-
           expanded_form |>
-          # Safe version. If the filter fails (mainly because the variables
-          # declared in current_condition do not belong to the current form) it
-          # returns the original unfiltered form.
-          safe_filter(!(!!current_condition)) |>
+          # Safe way to define if the branching logic condition is met. If the
+          # logic fails  it assumes the condition is met for all cases.
+          # It returns NA for those cases where the variables involved in the
+          # branching logic are missing. So, if a  branching logic can not
+          # be resolved it is assumed the condition is met and the completeness
+          # check must be performed.
+          safe_condition_definition(current_condition) |>
+          dplyr::filter_out(.data$meets_condition) |>
           dplyr::filter(!is.na(!!current_variable)) |>
           dplyr::mutate(
             variable = x,
             condition = current_condition_label,
+            evaluable_condition = dplyr::if_else(
+              is.na(.data$meets_condition),
+              "No",
+              "Yes"
+            ),
             completeness_issue = "Unexpected",
             missing_value = NA_character_
           ) |>
@@ -326,6 +347,7 @@ verify_completeness_form <- function(
             )),
             "variable",
             "condition",
+            "evaluable_condition",
             "completeness_issue",
             "missing_value"
           )
@@ -348,25 +370,104 @@ verify_completeness_form <- function(
 }
 
 
-#' Check completeness of REDCap data forms
+#' @title Check Completeness of REDCap Data Forms
+#' @description
+#'   Verifies completeness of specified forms in REDCap data, considering
+#'   user-defined missing values and branching logic conditions. For each
+#'   variable, the function evaluates whether the corresponding REDCap
+#'   branching logic condition is met and flags values that are absent when
+#'   expected (`"missing"`) or present when not expected (`"unexpected"`).
 #'
-#' This function verifies completeness of specified forms in REDCap data,
-#' considering user-defined missing values and branching logic conditions.
+#' @param rc_data A REDCap data object with attributes `"metadata"`,
+#'   `"missing"`, `"forms"`, and `"id_var"`, as produced by
+#'   `odytools::ody_rc_import()`.
+#' @param forms A character vector of form names to check, or `"All"` (the
+#'   default) to check every form in `rc_data`.
+#' @param user_na_is_data A logical scalar. If `TRUE` (the default),
+#'   user-defined missing values (declared missing codes) are treated as
+#'   non-missing data, so only regular `NA`s are flagged. If `FALSE`, any
+#'   `NA`-like value — including user-defined missing codes — is considered
+#'   missing.
+#' @param check_for A character string controlling which completeness issues
+#'   to flag. One of:
+#'   \describe{
+#'     \item{`"missing"`}{Variables whose branching logic condition is met but
+#'       whose value is absent.}
+#'     \item{`"unexpected"`}{Variables whose branching logic condition is not
+#'       met but whose value is present.}
+#'     \item{`"both"`}{Both missing and unexpected values.}
+#'   }
+#' @param extra_conditions_list An optional named list of additional branching
+#'   logic conditions expressed as R character strings. Names must match
+#'   variable names in `rc_data`. If a variable is already covered by the
+#'   metadata branching logic, the entry in `extra_conditions_list` takes
+#'   precedence and replaces it.
+#' @param format A character string specifying the output format. One of:
+#'   \describe{
+#'     \item{`"raw"`}{Returns internal variable names, the branching logic
+#'       condition string, and the `evaluable_condition` flag.}
+#'     \item{`"friendly"`}{Replaces internal names with human-readable labels
+#'       (field labels, instrument labels, event names) and drops internal
+#'       columns not useful for reporting.}
+#'   }
+#' @param include_non_evaluable_conditions A logical scalar. If `TRUE` (the
+#'   default), retains rows where the branching logic condition could not be
+#'   evaluated because the variables it depends on are themselves missing;
+#'   these rows are marked `evaluable_condition = "No"`. If `FALSE`, such
+#'   rows are silently dropped and the `evaluable_condition` column is removed
+#'   from the output.
 #'
-#' @param rc_data A REDCap data frame with associated attributes
-#'   `"metadata"`, `"missing"`, and `"forms"`.
-#' @param forms Character vector of form names to check or `"All"` (the default) to check all forms.
-#' @param user_na_is_data Logical, if TRUE treats user-defined missing values as non-missing values.
-#' @param check_for Character value indicating what to check for:
-#' \describe{
-#'   \item{missing}{Values that according to its branching logic should be present and they are not.}
-#'   \item{unexpected}{Values that according to its branching logic should not be present and they are.}
-#'   \item{both}{Both missing and unexpected values.}
-#' }
-#' @param extra_conditions_list Optional list of additional conditions to consider.
-#' @param format Character, output format: `"raw"` returns raw results; `"friendly"` returns a more readable summary with labels and descriptive names.
+#' @return A tibble where each row corresponds to a completeness issue
+#'   detected for a specific subject, variable, and (if applicable) event and
+#'   form instance. Columns depend on the `format` and
+#'   `include_non_evaluable_conditions` arguments:
+#'   \describe{
+#'     \item{`id_var`}{Subject identifier (column name matches the project's
+#'       record ID field).}
+#'     \item{`redcap_event_name` / `event`}{Event identifier (`raw`) or label
+#'       (`friendly`). `NA` for non-longitudinal projects.}
+#'     \item{`redcap_form_name` / `form`}{Form identifier (`raw`) or label
+#'       (`friendly`).}
+#'     \item{`redcap_instance_type`, `redcap_instance_number` / `form_instance`}{
+#'       Repeat instrument metadata.}
+#'     \item{`variable` / `field`}{Variable name (`raw`) or field label
+#'       (`friendly`).}
+#'     \item{`condition`}{The branching logic condition as an R expression
+#'       string. `"Allways"` when no branching logic applies. Only present in
+#'       `"raw"` format.}
+#'     \item{`evaluable_condition`}{`"Yes"` if the condition could be resolved,
+#'       `"No"` if it could not (dependent variables were missing). Only
+#'       present when `include_non_evaluable_conditions = TRUE` and
+#'       `format = "raw"`.}
+#'     \item{`completeness_issue`}{One of `"Regular missing"`, `"User missing"`,
+#'       or `"Unexpected"`.}
+#'     \item{`missing_value`}{Label of the user-defined missing code when
+#'       `completeness_issue` is `"User missing"`. Column is omitted entirely
+#'       if no user-defined missing values are detected.}
+#'   }
+#'   When `format = "raw"`, the returned tibble carries a `"reviewed_forms"`
+#'   attribute listing the forms that were checked.
 #'
-#' @return A tibble summarizing missing data per variable and form.
+#' @details
+#'   ## Branching logic resolution
+#'
+#'   REDCap branching logic is translated into R expressions and evaluated
+#'   row-by-row to determine whether each variable is expected to be present
+#'   for each case. The evaluation follows a conservative approach with two
+#'   distinct failure modes:
+#'
+#'   - **Expression error** (e.g. branching logic contains invalid or
+#'     unsupported syntax): the condition is assumed to be met for all cases,
+#'     so completeness is checked for everyone.
+#'
+#'   - **Unresolvable branching** (the variables referenced in the branching
+#'     logic are themselves missing for a given case): the condition evaluates
+#'     to `NA` for that case. By default (`include_non_evaluable_conditions =
+#'     TRUE`), these rows are retained and flagged with `evaluable_condition =
+#'     "No"`. Set
+#'     `include_non_evaluable_conditions = FALSE` to exclude them.
+#'
+#' @seealso [argos_count_forms()], [argos_write_forms_matrix()]
 #' @export
 argos_check_completeness <- function(
   rc_data,
@@ -374,7 +475,8 @@ argos_check_completeness <- function(
   user_na_is_data = TRUE,
   check_for = c("missing", "unexpected", "both"),
   extra_conditions_list = NULL,
-  format = c("raw", "friendly")
+  format = c("raw", "friendly"),
+  include_non_evaluable_conditions = TRUE
 ) {
   check_for <- rlang::arg_match(check_for)
   format <- rlang::arg_match(format)
@@ -424,15 +526,30 @@ argos_check_completeness <- function(
       dplyr::select(-"missing_value")
   }
 
+  if (!include_non_evaluable_conditions) {
+    completeness_result <-
+      completeness_result |>
+      dplyr::filter(.data$evaluable_condition == "Yes") |>
+      dplyr::select(-"evaluable_condition")
+  }
+
   if (format == "raw") {
+    attr(completeness_result, "reviewed_forms") <- forms
     return(completeness_result)
   }
 
   field_label <- metadata |>
     dplyr::select("field_name", "field_label")
   form_names <- attr(rc_data, "forms")
-  event_names <- attr(rc_data, "events") |>
-    dplyr::select("event_name", "unique_event_name")
+  if (!is.null(attr(rc_data, "events"))) {
+    event_names <- attr(rc_data, "events") |>
+      dplyr::select("event_name", "unique_event_name")
+  } else {
+    event_names <- tibble::tibble(
+      event_name = NA_character_,
+      unique_event_name = NA_character_
+    )
+  }
 
   completeness_result |>
     dplyr::left_join(field_label, by = c("variable" = "field_name")) |>
@@ -456,7 +573,7 @@ argos_check_completeness <- function(
       form_instance = .data$redcap_instance_number
     ) |>
     dplyr::select(
-      "record_id",
+      tidyselect::all_of(c(attr(rc_data, "id_var"))),
       "event",
       "form",
       "form_instance",
@@ -468,18 +585,36 @@ argos_check_completeness <- function(
 }
 
 
-#' Count form completions in REDCap data
+#' @title Compute Per-Subject Form Counts Across Events
+#' @description
+#'   Builds a completion matrix from REDCap data by counting how many times each
+#'   form appears for each subject within each event.
 #'
-#' This function counts the number of records per form and event in REDCap data.
-#' It returns a list of data frames, one per event, with counts of forms completed by record.
-#' Optionally, the result can be saved as an Excel file with one sheet per event.
+#'   The function ensures the expected subject-event-form structure is complete
+#'   by joining observed counts with the form-event mapping stored in
+#'   `rc_data` attributes, filling missing combinations with `0`.
 #'
-#' @param rc_data A REDCap data frame imported with  `odytools::ody_rc_import()`
-#' @param save_path Optional path to save the output Excel file; if NULL, no file is saved.
+#' @param rc_data A data frame returned by `odytools::ody_rc_import()`, with
+#'   REDCap metadata stored as attributes. It must include `id_var`, `subjects`,
+#'   `forms`, `events` (for longitudinal projects), and `forms_events_mapping`.
 #'
-#' @return A list of tibbles, each containing counts of completed forms per record for a specific event.
+#' @return A tibble with one row per subject-event-form combination and columns:
+#'   `id_var` (project record identifier column), `redcap_event_name`,
+#'   `redcap_form_name`, and `n` (integer count of observed form instances).
+#'   For non-longitudinal projects, `redcap_event_name` is `NA`.
+#'
+#'   The returned tibble includes attributes copied from `rc_data`:
+#'   `events`, `forms`, `redcap_import_date`, and `project_info`.
+#'
+#' @details
+#'   For each form, the function extracts form-level records with
+#'   [odytools::ody_rc_select_form()], counts rows by subject and event, and
+#'   expands to all expected subject-event combinations defined by
+#'   `forms_events_mapping`. Unobserved combinations are assigned `n = 0`.
+#'
+#' @seealso [argos_write_forms_matrix()]
 #' @export
-argos_count_forms <- function(rc_data, save_path = NULL) {
+argos_count_forms <- function(rc_data) {
   id_var <- attr(rc_data, "id_var")
   subjects <- attr(rc_data, "subjects")
   forms <- attr(rc_data, "forms")$instrument_name
@@ -496,7 +631,7 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
       )
   }
 
-  form_count_raw <- purrr::map(
+  forms_count <- purrr::map(
     forms,
     function(form) {
       form_data <- odytools::ody_rc_select_form(rc_data, !!form)
@@ -559,20 +694,53 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
     ) |>
     dplyr::arrange(.data$redcap_event_name)
 
-  if (is.null(save_path)) {
-    return(form_count_raw)
-  }
+  attr(forms_count, "events") <- attr(rc_data, "events")
+  attr(forms_count, "forms") <- attr(rc_data, "forms")
+  attr(forms_count, "redcap_import_date") <- attr(rc_data, "import_date")
+  attr(forms_count, "project_info") <- attr(rc_data, "project_info")
 
-  forms_dict <- attr(rc_data, "forms")$instrument_label |>
+  forms_count
+}
+
+#' @title Write Form Completion Matrices to an Excel Workbook
+#' @description
+#'   Creates an `.xlsx` workbook with one worksheet per REDCap event, where each
+#'   row is a subject and each column is a form label. Cell values are the number
+#'   of observed instances for each subject-form combination.
+#'
+#'   The workbook is styled to highlight completion counts (`0` in gray,
+#'   `> 0` in light blue), and the output filename is suffixed with the REDCap
+#'   import timestamp extracted from `forms_count` attributes.
+#'
+#' @param forms_count A tibble generated by [argos_count_forms()] containing
+#'   `redcap_event_name`, `redcap_form_name`, and `n`, plus attributes `forms`,
+#'   `events` (or `NULL` for non-longitudinal projects), `project_info`, and
+#'   `redcap_import_date`.
+#' @param file_path A character string specifying the output file path. If it
+#'   ends with `.xlsx`, the timestamp is inserted before the extension;
+#'   otherwise, `.xlsx` is appended.
+#
+#'
+#' @details
+#'   Event names are taken from the `events` attribute and mapped to display
+#'   labels; if multiple arms are present, worksheet names include the arm
+#'   number. For non-longitudinal projects (`events` is `NULL`), a single event
+#'   is derived from `project_info$project_title`.
+#'
+#' @seealso [argos_count_forms()]
+#' @export
+argos_write_forms_matrix <- function(forms_count, file_path) {
+  forms <- attr(forms_count, "forms")$instrument_name
+  forms_dict <- attr(forms_count, "forms")$instrument_label |>
     purrr::set_names(forms)
-
-  events_attr <- attr(rc_data, "events")
+  events_attr <- attr(forms_count, "events")
+  events <- events_attr$unique_event_name
 
   if (is.null(events_attr)) {
     events_attr <- tibble::tibble(
       arm_num = 1,
-      event_name = attr(rc_data, "project_info")$project_title,
-      unique_event_name = attr(rc_data, "project_info")$project_title
+      event_name = attr(forms_count, "project_info")$project_title,
+      unique_event_name = attr(forms_count, "project_info")$project_title
     )
   }
   # If there is more than one arm, append the arm number to the event name
@@ -595,7 +763,7 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
   form_count_list <-
     purrr::map(
       events,
-      ~ form_count_raw |>
+      ~ forms_count |>
         dplyr::filter(
           redcap_event_name == .env$.
         ) |>
@@ -664,5 +832,26 @@ argos_count_forms <- function(rc_data, save_path = NULL) {
       }
     }
   )
-  openxlsx::saveWorkbook(wb, save_path, overwrite = TRUE)
+
+  import_date <- attr(forms_count, "redcap_import_date") |>
+    stringr::str_extract("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}") |>
+    stringr::str_replace_all(" ", "_") |>
+    stringr::str_remove_all("[-:]")
+
+  if (stringr::str_detect(file_path, "\\.xlsx$")) {
+    final_file_path <- stringr::str_replace(
+      file_path,
+      "\\.xlsx$",
+      paste0("_", import_date, ".xlsx")
+    )
+  } else {
+    final_file_path <- stringr::str_c(
+      file_path,
+      "_",
+      import_date,
+      ".xlsx"
+    )
+  }
+
+  openxlsx::saveWorkbook(wb, here::here(final_file_path), overwrite = TRUE)
 }

@@ -28,7 +28,7 @@ pak::pak("VHIO-Odyssey/argosrc")
 
 - `argos_check_completeness()`: checks missing and unexpected values form-by-form using REDCap branching logic.
 - `argos_count_forms()`: counts available form instances by subject and event; optionally exports an Excel summary.
-- `argos_check_plausibility()`: runs a catalogue of plausibility rules on the current REDCap export.
+- `argos_check_verifications()`: runs a catalogue of plausibility rules on the current REDCap export.
 - `argos_write_plausibility_report()`: writes plausibility results to a timestamped Excel report.
 
 ## Typical workflow
@@ -51,7 +51,7 @@ completeness_tbl <- argos_check_completeness(
 )
 
 # 2) Plausibility checks
-plausibility_tbl <- argos_check_plausibility(redcap_data)
+plausibility_tbl <- argos_check_verifications(redcap_data)
 
 # 3) Export plausibility report
 argos_write_plausibility_report(

@@ -6,10 +6,15 @@
 \alias{argosrc-package}
 \title{argosrc: Automatic Review and Governance for Oncology Studies in REDCap}
 \description{
-More about what it does (maybe more than one line). Continuation lines should be indented.
+A companion to 'odytools' for automated data quality review of REDCap databases in clinical oncology research. Provides tools to assess completeness (missing and unexpected values respecting branching logic) and plausibility (cross-field consistency and temporal logic) across REDCap forms and events. Results can be exported as timestamped Excel reports suitable for inclusion in study monitoring workflows.
 }
 \author{
 \strong{Maintainer}: Eduardo García-Galea \email{eduardogarcia@vhio.net} (\href{https://orcid.org/0000-0003-4699-0786}{ORCID})
+
+Authors:
+\itemize{
+  \item Eduardo García-Galea \email{eduardogarcia@vhio.net} (\href{https://orcid.org/0000-0003-4699-0786}{ORCID})
+}
 
 }
 \keyword{internal}

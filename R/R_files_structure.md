@@ -1,59 +1,59 @@
-## **general**
+## **verification_process**
 
-Project scaffolding helpers.
+Funciones para la configuración inicial del proyecto, ejecución del proceso de verificación de plausibilidad y generación de informes.
 
--   argos_add_folders [here, stringr, odytools]
+-   argos_add_folders [here, odytools::get_project_name, stringr]
+-   filter_issues [dplyr, glue, tidyselect]
+-   find_valid_candidates [dplyr, purrr, stringr, tibble, tidyr, tidyselect]
+-   create_verification_description [glue, stringr]
+-   argos_check_verifications [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
+-   argos_add_completeness_results [dplyr, glue, purrr, stringr, tibble, tidyselect]
+-   argos_add_to_verifications [dplyr, glue, purrr, tidyr, tidyselect]
+-   argos_run_ad_hoc_verifications [dplyr, purrr, rlang]
+-   argos_write_verification_report [dplyr, here, openxlsx2, stringr]
 
 ## **completeness**
 
-Completeness checking functions for REDCap data.
+Funciones de verificación de completitud en datos REDCap.
 
 -   filter_condition [dplyr]
--   get_conditions_from_metadata [filter_condition, dplyr, stringr, labelled]
--   verify_completeness_form [get_conditions_from_metadata, safe_filter, odytools, dplyr, purrr, tibble, tidyselect, stringr, labelled]
--   argos_check_completeness [get_conditions_from_metadata, verify_completeness_form, dplyr, purrr, tidyselect, stringr, rlang]
--   argos_count_forms [odytools, dplyr, purrr, tibble, tidyr, stringr, openxlsx]
+-   get_conditions_from_metadata [dplyr, labelled, stringr]
+-   verify_completeness_form [safe_condition_definition, dplyr, labelled, odytools::ody_rc_select, odytools::ody_rc_select_form, purrr, stringr, tibble, tidyselect]
+-   argos_check_completeness [get_conditions_from_metadata, verify_completeness_form, dplyr, purrr, rlang, stringr, tidyselect]
+-   argos_count_forms [dplyr, odytools::ody_rc_select_form, purrr, tibble, tidyr]
+-   argos_write_forms_matrix [dplyr, here, openxlsx, purrr, stringr, tibble, tidyr]
 
-## **plausibility_general**
+## **verification_functions**
 
-General plausibility checking and reporting functions.
+Funciones específicas de verificación llamadas por `argos_check_verifications`.
 
--   filter_issues [dplyr, glue, tidyselect]
--   find_valid_candidates [dplyr, purrr, stringr, tidyselect, tibble, tidyr]
--   argos_check_plausibility [find_valid_candidates, create_verification_description, plausibility_verifications_master, dplyr, purrr, tibble, stringr, tidyr, tidyselect, rlang]
--   create_verification_description [glue, stringr]
--   argos_write_plausibility_report [dplyr, purrr, stringr, openxlsx2, here]
-
-## **plausibility_verifications**
-
-Specific verification functions called by `argos_check_plausibility`.
-
--   verif_1_1 [filter_issues, odytools, dplyr, glue]
--   verif_1_2 [filter_issues, odytools, dplyr, stringr, glue]
--   verif_2_1 [filter_issues, odytools, dplyr, lubridate, glue]
--   verif_3_1 [filter_issues, odytools, dplyr, tidyr, tidyselect, glue]
--   verif_4_1 [filter_issues, odytools, dplyr, tidyr, stringr, glue]
--   verif_5_1 [filter_issues, odytools, dplyr, glue]
--   verif_6_1 [filter_issues, odytools, dplyr, lubridate, glue]
--   verif_7_1 [filter_issues, odytools, dplyr, lubridate, glue, tidyr]
+-   verif_1_1 [filter_issues, dplyr, glue, odytools::ody_rc_format, odytools::ody_rc_select]
+-   verif_1_2 [filter_issues, dplyr, glue, odytools::ody_rc_format, odytools::ody_rc_select, stringr]
+-   verif_1_3 [filter_issues, dplyr, glue, odytools::ody_rc_format, odytools::ody_rc_select, stringr, tidyselect]
+-   verif_2_1 [filter_issues, dplyr, glue, lubridate, odytools::ody_rc_format, odytools::ody_rc_select]
+-   verif_3_1 [filter_issues, dplyr, glue, odytools::ody_rc_format, odytools::ody_rc_select, tidyr, tidyselect]
+-   verif_4_1 [filter_issues, dplyr, odytools::ody_rc_format, odytools::ody_rc_select, stringr, tidyr]
+-   verif_5_1 [filter_issues, dplyr, glue, odytools::ody_rc_format, odytools::ody_rc_select]
+-   verif_6_1 [filter_issues, dplyr, glue, lubridate, odytools::ody_rc_format, odytools::ody_rc_select]
+-   verif_7_1 [filter_issues, dplyr, glue, lubridate, odytools::ody_rc_format, odytools::ody_rc_select, tidyselect]
 
 ## **utils**
 
-Internal utility functions.
+Funciones utilitarias internas.
 
--   safe_filter [dplyr]
+-   safe_condition_definition [dplyr]
 
 ## **data**
 
-Internal dataset and helper functions for its construction.
+Dataset interno y funciones auxiliares para su construcción.
 
 -   plausibility_verifications_master (dataset)
--   create_arguments_metadata [odytools, dplyr, purrr, stringr, tibble]
+-   create_arguments_metadata [dplyr, odytools::ody_rc_get_metadata, purrr, stringr, tibble]
 -   create_candidates_mapping [purrr, stringr, tibble]
 
 ## **globals**
 
-Package-level setup only.
+Configuración global del paquete.
 
 -   No user-facing functions
 -   Registers the internal dataset name for `R CMD check`

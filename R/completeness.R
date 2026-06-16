@@ -268,11 +268,9 @@ verify_completeness_form <- function(
       if (check_for %in% c("missing", "both")) {
         missing_values <-
           expanded_form |>
-          # Safe way to define is the branching logic condition is met. If the
-          # logic fails (mainly because the variables declared in
-          # current_condition do not belong to the current form) it assumes the
-          # condition is met for all cases.
-          # It returs NA for dose case where the variables involved in the
+          # Safe way to define if the branching logic condition is met. If the
+          # logic fails  it assumes the condition is met for all cases.
+          # It returns NA for those cases where the variables involved in the
           # branching logic are missing. So, if a branching logic can not be
           # resolved it is assumed the condition is met and the completeness
           # check must be performed.
@@ -282,6 +280,11 @@ verify_completeness_form <- function(
           dplyr::mutate(
             variable = x,
             condition = current_condition_label,
+            evaluable_condition = dplyr::if_else(
+              is.na(.data$meets_condition),
+              "No",
+              "Yes"
+            ),
             completeness_issue = dplyr::case_when(
               labelled::is_regular_na(!!current_variable) ~ "Regular missing",
               labelled::is_user_na(!!current_variable) ~ "User missing",
@@ -303,6 +306,7 @@ verify_completeness_form <- function(
             )),
             "variable",
             "condition",
+            "evaluable_condition",
             "completeness_issue",
             "missing_value"
           )
@@ -314,18 +318,22 @@ verify_completeness_form <- function(
         unexpected_values <-
           expanded_form |>
           # Safe way to define if the branching logic condition is met. If the
-          # logic fails (mainly because the variables declared in
-          # current_condition do not belong to the current form) it assumes the
-          # condition is met for all cases. It returns NA for those cases where
-          # the variables involved in the branching logic are missing. So, if a
-          # branching logic can not be resolved it is assumed the condition is
-          # met and the completeness check must be performed.
+          # logic fails  it assumes the condition is met for all cases.
+          # It returns NA for those cases where the variables involved in the
+          # branching logic are missing. So, if a  branching logic can not
+          # be resolved it is assumed the condition is met and the completeness
+          # check must be performed.
           safe_condition_definition(current_condition) |>
           dplyr::filter_out(.data$meets_condition) |>
           dplyr::filter(!is.na(!!current_variable)) |>
           dplyr::mutate(
             variable = x,
             condition = current_condition_label,
+            evaluable_condition = dplyr::if_else(
+              is.na(.data$meets_condition),
+              "No",
+              "Yes"
+            ),
             completeness_issue = "Unexpected",
             missing_value = NA_character_
           ) |>
@@ -339,6 +347,7 @@ verify_completeness_form <- function(
             )),
             "variable",
             "condition",
+            "evaluable_condition",
             "completeness_issue",
             "missing_value"
           )
@@ -361,49 +370,104 @@ verify_completeness_form <- function(
 }
 
 
-#' Check completeness of REDCap data forms
+#' @title Check Completeness of REDCap Data Forms
+#' @description
+#'   Verifies completeness of specified forms in REDCap data, considering
+#'   user-defined missing values and branching logic conditions. For each
+#'   variable, the function evaluates whether the corresponding REDCap
+#'   branching logic condition is met and flags values that are absent when
+#'   expected (`"missing"`) or present when not expected (`"unexpected"`).
 #'
-#' This function verifies completeness of specified forms in REDCap data,
-#' considering user-defined missing values and branching logic conditions.
+#' @param rc_data A REDCap data object with attributes `"metadata"`,
+#'   `"missing"`, `"forms"`, and `"id_var"`, as produced by
+#'   `odytools::ody_rc_import()`.
+#' @param forms A character vector of form names to check, or `"All"` (the
+#'   default) to check every form in `rc_data`.
+#' @param user_na_is_data A logical scalar. If `TRUE` (the default),
+#'   user-defined missing values (declared missing codes) are treated as
+#'   non-missing data, so only regular `NA`s are flagged. If `FALSE`, any
+#'   `NA`-like value — including user-defined missing codes — is considered
+#'   missing.
+#' @param check_for A character string controlling which completeness issues
+#'   to flag. One of:
+#'   \describe{
+#'     \item{`"missing"`}{Variables whose branching logic condition is met but
+#'       whose value is absent.}
+#'     \item{`"unexpected"`}{Variables whose branching logic condition is not
+#'       met but whose value is present.}
+#'     \item{`"both"`}{Both missing and unexpected values.}
+#'   }
+#' @param extra_conditions_list An optional named list of additional branching
+#'   logic conditions expressed as R character strings. Names must match
+#'   variable names in `rc_data`. If a variable is already covered by the
+#'   metadata branching logic, the entry in `extra_conditions_list` takes
+#'   precedence and replaces it.
+#' @param format A character string specifying the output format. One of:
+#'   \describe{
+#'     \item{`"raw"`}{Returns internal variable names, the branching logic
+#'       condition string, and the `evaluable_condition` flag.}
+#'     \item{`"friendly"`}{Replaces internal names with human-readable labels
+#'       (field labels, instrument labels, event names) and drops internal
+#'       columns not useful for reporting.}
+#'   }
+#' @param include_non_evaluable_conditions A logical scalar. If `TRUE` (the
+#'   default), retains rows where the branching logic condition could not be
+#'   evaluated because the variables it depends on are themselves missing;
+#'   these rows are marked `evaluable_condition = "No"`. If `FALSE`, such
+#'   rows are silently dropped and the `evaluable_condition` column is removed
+#'   from the output.
 #'
-#' @param rc_data A REDCap data frame with associated attributes
-#'   `"metadata"`, `"missing"`, and `"forms"`.
-#' @param forms Character vector of form names to check or `"All"` (the default) to check all forms.
-#' @param user_na_is_data Logical, if TRUE treats user-defined missing values as non-missing values.
-#' @param check_for Character value indicating what to check for:
-#' \describe{
-#'   \item{missing}{Values that according to its branching logic should be present and they are not.}
-#'   \item{unexpected}{Values that according to its branching logic should not be present and they are.}
-#'   \item{both}{Both missing and unexpected values.}
-#' }
-#' @param extra_conditions_list Optional list of additional conditions to consider.
-#' @param format Character, output format: `"raw"` returns raw results; `"friendly"` returns a more readable summary with labels and descriptive names.
-#'
-#' @return A tibble summarizing missing data per variable and form.
+#' @return A tibble where each row corresponds to a completeness issue
+#'   detected for a specific subject, variable, and (if applicable) event and
+#'   form instance. Columns depend on the `format` and
+#'   `include_non_evaluable_conditions` arguments:
+#'   \describe{
+#'     \item{`id_var`}{Subject identifier (column name matches the project's
+#'       record ID field).}
+#'     \item{`redcap_event_name` / `event`}{Event identifier (`raw`) or label
+#'       (`friendly`). `NA` for non-longitudinal projects.}
+#'     \item{`redcap_form_name` / `form`}{Form identifier (`raw`) or label
+#'       (`friendly`).}
+#'     \item{`redcap_instance_type`, `redcap_instance_number` / `form_instance`}{
+#'       Repeat instrument metadata.}
+#'     \item{`variable` / `field`}{Variable name (`raw`) or field label
+#'       (`friendly`).}
+#'     \item{`condition`}{The branching logic condition as an R expression
+#'       string. `"Allways"` when no branching logic applies. Only present in
+#'       `"raw"` format.}
+#'     \item{`evaluable_condition`}{`"Yes"` if the condition could be resolved,
+#'       `"No"` if it could not (dependent variables were missing). Only
+#'       present when `include_non_evaluable_conditions = TRUE` and
+#'       `format = "raw"`.}
+#'     \item{`completeness_issue`}{One of `"Regular missing"`, `"User missing"`,
+#'       or `"Unexpected"`.}
+#'     \item{`missing_value`}{Label of the user-defined missing code when
+#'       `completeness_issue` is `"User missing"`. Column is omitted entirely
+#'       if no user-defined missing values are detected.}
+#'   }
+#'   When `format = "raw"`, the returned tibble carries a `"reviewed_forms"`
+#'   attribute listing the forms that were checked.
 #'
 #' @details
-#' ## Branching logic resolution
+#'   ## Branching logic resolution
 #'
-#' REDCap branching logic is translated into R expressions and evaluated
-#' row-by-row to determine whether each variable is expected to be present for
-#' each case.
+#'   REDCap branching logic is translated into R expressions and evaluated
+#'   row-by-row to determine whether each variable is expected to be present
+#'   for each case. The evaluation follows a conservative approach with two
+#'   distinct failure modes:
 #'
-#' The evaluation follows a conservative approach with two distinct failure
-#' modes:
+#'   - **Expression error** (e.g. branching logic contains invalid or
+#'     unsupported syntax): the condition is assumed to be met for all cases,
+#'     so completeness is checked for everyone.
 #'
-#' - **Expression error** (e.g. branching logic contains invalid or not yet
-#'   supported expressions): the condition is assumed to be met
-#'   for all cases, so completeness is checked for everyone.
+#'   - **Unresolvable branching** (the variables referenced in the branching
+#'     logic are themselves missing for a given case): the condition evaluates
+#'     to `NA` for that case. By default (`include_non_evaluable_conditions =
+#'     TRUE`), these rows are retained and flagged with `evaluable_condition =
+#'     "No"`. Set
+#'     `include_non_evaluable_conditions = FALSE` to exclude them.
 #'
-#' - **Unresolvable branching** (the variables referenced in the branching
-#'   logic are themselves missing for a given case): the condition evaluates to
-#'   `NA` for that case. The function then applies the conservative rule:
-#'   - If the target variable is **absent** -> flagged as `missing`.
-#'   - If the target variable is **present** -> flagged as `unexpected`.
-#'
-#'   This ensures that cases with ambiguous branching logic are always reviewed,
-#'   rather than silently ignored.
-#'
+#' @seealso [argos_count_forms()], [argos_write_forms_matrix()]
 #' @export
 argos_check_completeness <- function(
   rc_data,
@@ -411,7 +475,8 @@ argos_check_completeness <- function(
   user_na_is_data = TRUE,
   check_for = c("missing", "unexpected", "both"),
   extra_conditions_list = NULL,
-  format = c("raw", "friendly")
+  format = c("raw", "friendly"),
+  include_non_evaluable_conditions = TRUE
 ) {
   check_for <- rlang::arg_match(check_for)
   format <- rlang::arg_match(format)
@@ -461,6 +526,13 @@ argos_check_completeness <- function(
       dplyr::select(-"missing_value")
   }
 
+  if (!include_non_evaluable_conditions) {
+    completeness_result <-
+      completeness_result |>
+      dplyr::filter(.data$evaluable_condition == "Yes") |>
+      dplyr::select(-"evaluable_condition")
+  }
+
   if (format == "raw") {
     attr(completeness_result, "reviewed_forms") <- forms
     return(completeness_result)
@@ -469,8 +541,15 @@ argos_check_completeness <- function(
   field_label <- metadata |>
     dplyr::select("field_name", "field_label")
   form_names <- attr(rc_data, "forms")
-  event_names <- attr(rc_data, "events") |>
-    dplyr::select("event_name", "unique_event_name")
+  if (!is.null(attr(rc_data, "events"))) {
+    event_names <- attr(rc_data, "events") |>
+      dplyr::select("event_name", "unique_event_name")
+  } else {
+    event_names <- tibble::tibble(
+      event_name = NA_character_,
+      unique_event_name = NA_character_
+    )
+  }
 
   completeness_result |>
     dplyr::left_join(field_label, by = c("variable" = "field_name")) |>
@@ -494,7 +573,7 @@ argos_check_completeness <- function(
       form_instance = .data$redcap_instance_number
     ) |>
     dplyr::select(
-      "record_id",
+      tidyselect::all_of(c(attr(rc_data, "id_var"))),
       "event",
       "form",
       "form_instance",

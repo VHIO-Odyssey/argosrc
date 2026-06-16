@@ -1,4 +1,4 @@
-# argosrc 0.0.1.9000
+# argosrc 0.0.2
 
 ## New exported functions
 

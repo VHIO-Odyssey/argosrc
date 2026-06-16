@@ -2,11 +2,11 @@
 
 ## New exported functions
 
-- Added `argos_add_to_plausibility()` to transform ad-hoc verification outputs into the nested plausibility result format used by `argos_check_verifications()`.
-- Added `argos_run_ad_hoc_verifications()` to source ad-hoc scripts, detect objects marked with `add_to_plausibility`, and bind them into a unified plausibility result table.
+- Added `argos_add_to_verifications()` to transform ad-hoc verification outputs into the nested verification result format expected by `argos_check_verifications()`. The returned object carries an `add_to_verifications` attribute that marks it for collection.
+- Added `argos_run_ad_hoc_verifications()` to source ad-hoc scripts, collect objects marked with the `add_to_verifications` attribute (typically created with `argos_add_to_verifications()`), and bind them into a unified verification result table.
 - Added `argos_write_forms_matrix()` to export form completion matrices to a timestamped Excel workbook (one worksheet per event), using color-coded cell formatting to highlight zero vs non-zero completion counts.
 - Added `argos_write_verification_report()` to export a unified verification report (plausibility + completeness) to a timestamped Excel workbook. Supersedes `argos_write_plausibility_report()`, which has been removed.
-- Added `argos_add_completeness_results()` to convert the output of `argos_check_completeness()` into the standard verification row format and append it to a plausibility results tibble, enabling a single combined report via `argos_write_verification_report()`.
+- Added `argos_add_completeness_results()` to convert the output of `argos_check_completeness()` into the standard verification row format and append it to a verification results tibble, enabling a single combined report via `argos_write_verification_report()`.
 
 ## Verification catalogue
 
@@ -22,14 +22,21 @@
 ## Completeness improvements
 
 - `argos_check_completeness()` now attaches a `reviewed_forms` character attribute to its raw output, listing the REDCap form names that were reviewed. This attribute is required by `argos_add_completeness_results()`.
+- Added `include_non_evaluable_conditions` parameter to `argos_check_completeness()`. When `TRUE` (default), rows where the branching logic condition cannot be evaluated (because the variables it depends on are themselves missing) are retained and flagged with `evaluable_condition = "No"`. Set to `FALSE` to silently drop these rows.
+- `argos_check_completeness()` output in `format = "raw"` now includes an `evaluable_condition` column (`"Yes"` / `"No"`) indicating whether the branching logic condition could be resolved for each flagged row.
+- `argos_check_completeness()` in `format = "friendly"` now uses the project's dynamic `id_var` instead of the hard-coded `record_id` column name, and correctly handles non-longitudinal projects (those without an `events` attribute).
+- Branching logic condition suffixes (after `___`) are now lowercased for consistency with REDCap field naming conventions.
+- Replaced internal helper `safe_filter()` with `safe_condition_definition()`. The new helper adds a `meets_condition` column instead of filtering directly, enabling finer-grained handling of unresolvable conditions: returns `NA` for rows where the branching logic variables are themselves missing, rather than assuming the condition is met for all rows.
+- `argos_count_forms()` has been refactored: the `save_path` parameter has been removed and the function now returns a flat tibble (instead of a list) with `redcap_event_name`, `redcap_form_name`, and `n` columns, plus REDCap metadata as attributes (`events`, `forms`, `redcap_import_date`, `project_info`). Pass this tibble to `argos_write_forms_matrix()` to export the Excel workbook.
 
 ## Breaking changes
 
 - Removed `argos_write_plausibility_report()`. Use `argos_write_verification_report()` instead.
+- `argos_count_forms()` no longer accepts a `save_path` argument. Use `argos_write_forms_matrix()` to export the Excel workbook.
 
 ## Project setup templates
 
-- Updated `argos_add_folders()` to copy `*_plausibility_master.R` (renamed from `*_plausibility.R`) and include a new `*_plausibility_adhoc.R` template for ad-hoc checks.
+- Updated `argos_add_folders()` to copy `*_verifications_master.R` and `*_verifications_adhoc.R` templates (renamed from `*_plausibility.R` and `*_plausibility_adhoc.R`) into `quality/argosrc/` and creates a `verification_results/` subfolder instead of separate `completeness/` and `plausibility/` directories.
 
 # argosrc 0.0.1
 

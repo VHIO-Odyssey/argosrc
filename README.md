@@ -26,20 +26,20 @@ pak::pak("VHIO-Odyssey/argosrc")
 
 ## Main functions
 
-**Completeness**
+**Completeness Verifications**
 
 - `argos_check_completeness()`: checks missing and unexpected values form-by-form using REDCap branching logic.
 - `argos_add_completeness_results()`: converts completeness output into the standard verification row format so it can be included in a unified report.
 
-**Plausibility**
+**Other Verifications**
 
-- `argos_check_verifications()`: runs the built-in catalogue of plausibility rules on a REDCap export, with optional ad-hoc script integration.
+- `argos_check_verifications()`: runs the built-in catalogue of verification rules on a REDCap export, with optional ad-hoc script integration.
 - `argos_add_to_verifications()`: wraps ad-hoc verification output into the nested format expected by `argos_check_verifications()`.
 - `argos_run_ad_hoc_verifications()`: sources ad-hoc verification scripts and binds their results into a unified verification table.
 
 **Reporting**
 
-- `argos_write_verification_report()`: exports a unified completeness + plausibility report to a timestamped Excel workbook.
+- `argos_write_verification_report()`: exports a unified completeness + verification report to a timestamped Excel workbook.
 - `argos_count_forms()`: counts available form instances by subject and event; returns a flat tibble with project metadata as attributes.
 - `argos_write_forms_matrix()`: exports form completion matrices to a timestamped Excel workbook with colour-coded formatting.
 

@@ -26,10 +26,26 @@ pak::pak("VHIO-Odyssey/argosrc")
 
 ## Main functions
 
+**Completeness**
+
 - `argos_check_completeness()`: checks missing and unexpected values form-by-form using REDCap branching logic.
-- `argos_count_forms()`: counts available form instances by subject and event; optionally exports an Excel summary.
-- `argos_check_verifications()`: runs a catalogue of plausibility rules on the current REDCap export.
-- `argos_write_plausibility_report()`: writes plausibility results to a timestamped Excel report.
+- `argos_add_completeness_results()`: converts completeness output into the standard verification row format so it can be included in a unified report.
+
+**Plausibility**
+
+- `argos_check_verifications()`: runs the built-in catalogue of plausibility rules on a REDCap export, with optional ad-hoc script integration.
+- `argos_add_to_verifications()`: wraps ad-hoc verification output into the nested format expected by `argos_check_verifications()`.
+- `argos_run_ad_hoc_verifications()`: sources ad-hoc verification scripts and binds their results into a unified verification table.
+
+**Reporting**
+
+- `argos_write_verification_report()`: exports a unified completeness + plausibility report to a timestamped Excel workbook.
+- `argos_count_forms()`: counts available form instances by subject and event; returns a flat tibble with project metadata as attributes.
+- `argos_write_forms_matrix()`: exports form completion matrices to a timestamped Excel workbook with colour-coded formatting.
+
+**Project setup**
+
+- `argos_add_folders()`: creates the `quality/argosrc/` folder structure and copies bundled template scripts into an existing project.
 
 ## Typical workflow
 
@@ -42,29 +58,30 @@ redcap_data <- ody_rc_import(
 	token = Sys.getenv("MY_REDCAP_TOKEN")
 )
 
-# 1) Completeness checks
-completeness_tbl <- argos_check_completeness(
+# 1) Plausibility checks
+verification_results <- argos_check_verifications(redcap_data)
+
+# 2) Completeness checks, appended to the same results table
+verification_results <- argos_check_completeness(
 	redcap_data,
 	forms = "All",
-	check_for = "both",
-	format = "friendly"
-)
+	check_for = "both"
+) |>
+	argos_add_completeness_results(verification_results)
 
-# 2) Plausibility checks
-plausibility_tbl <- argos_check_verifications(redcap_data)
-
-# 3) Export plausibility report
-argos_write_plausibility_report(
-	plausibility_tbl,
-	file_path = "outputs/plausibility_report.xlsx"
+# 3) Export unified report
+argos_write_verification_report(
+	verification_results,
+	file_path = "outputs/verification_report.xlsx"
 )
 ```
 
 ## Outputs
 
-- Completeness checks return a tidy table of issues per record, event, form and field.
-- Plausibility checks return one row per detected verification candidate, with execution status and issue tables.
-- Excel reports include project metadata, reviewed subjects and one sheet per verification with issues.
+- Completeness checks return a tidy table of issues per record, event, form and field; the `evaluable_condition` column flags rows where branching logic could not be resolved.
+- Plausibility checks return one row per verification candidate, with execution status (`"ok"`, `"fail"`, `"missing constants"`), issue counts, and nested issue tables.
+- The unified Excel report includes project metadata, reviewed subjects, a verifications summary, and one sheet per verification with detected issues.
+- Form completion matrices are exported as a separate colour-coded workbook via `argos_write_forms_matrix()`.
 
 ## Dependency note
 

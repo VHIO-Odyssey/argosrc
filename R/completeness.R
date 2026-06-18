@@ -204,10 +204,17 @@ verify_completeness_form <- function(
       }
 
       # Hay que añadir variables externas al formulario si así lo requiere el
-      # branching logic
+      # branching logic inccluidas las auxiliares de los checkbox.
+      all_variables <- c(
+        # Importante que las auxiliares checkbox vayan antes del metadata para
+        # asegurar que hacen macht primero.
+        attr(rc_data, "checkbox_aux"),
+        attr(rc_data, "metadata")$field_name
+      )
+
       cond_variables <- stringr::str_extract_all(
         as.character(current_condition),
-        stringr::str_c(attr(rc_data, "metadata")$field_name, collapse = "|")
+        stringr::str_c(all_variables, collapse = "|")
       ) |>
         unlist() |>
         unique()

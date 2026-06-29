@@ -307,7 +307,7 @@ verif_5_1 <- function(
         .data[[target_response]] == "Not evaluable" &
           .data[[no_target_response]] == "Non-CR/Non-PD" &
           .data[[new_lesions]] == "No" &
-          .data[[overall_response]] == "Not Evaluable (NE)" ~ TRUE,
+          .data[[overall_response]] == "Not evaluable (NE)" ~ TRUE,
         .default = FALSE
       )
     ) |>

@@ -4,7 +4,11 @@
 \alias{argos_add_completeness_results}
 \title{Append Completeness Results to a Verification Table}
 \usage{
-argos_add_completeness_results(previous_results, completeness_results)
+argos_add_completeness_results(
+  previous_results,
+  completeness_results,
+  verification_text = NULL
+)
 }
 \arguments{
 \item{previous_results}{A tibble of verification results already accumulated,
@@ -19,6 +23,12 @@ missing value), `completeness_issue` (a character column with values
 subject identifier. If user-missing codes are present, a `missing_value`
 column is also expected. The tibble must carry a `reviewed_forms` character
 attribute listing the REDCap form names that were reviewed.}
+
+\item{verification_text}{A character scalar, or `NULL`. When provided, it
+replaces the auto-generated verification description
+`"All variables in the form '<form>' are completed following its branching
+logic."` for every form row. The same text is used for all forms. Defaults
+to `NULL`, which produces the auto-generated description.}
 }
 \value{
 A tibble with the same columns as `previous_results` extended with
@@ -27,8 +37,10 @@ A tibble with the same columns as `previous_results` extended with
   \describe{
     \item{`verif_fn`}{The string `"completeness"`.}
     \item{`verification`}{A sentence describing the completeness check for
-      the form, e.g. `"All variables in the form 'my_form' are completed
-      following its branching logic."`}
+      the form. Defaults to
+      `"All variables in the form '<form>' are completed following its
+      branching logic."`, or `verification_text` when supplied.}
+    \item{`execution`}{The string `"ok"`.}
     \item{`n_issues`}{Integer count of completeness issues detected in the
       form.}
     \item{`issues`}{A list-column element containing a tibble of individual

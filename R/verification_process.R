@@ -712,6 +712,11 @@ argos_check_verifications <- function(
 #'   subject identifier. If user-missing codes are present, a `missing_value`
 #'   column is also expected. The tibble must carry a `reviewed_forms` character
 #'   attribute listing the REDCap form names that were reviewed.
+#' @param verification_text A character scalar, or `NULL`. When provided, it
+#'   replaces the auto-generated verification description
+#'   `"All variables in the form '<form>' are completed following its branching
+#'   logic."` for every form row. The same text is used for all forms. Defaults
+#'   to `NULL`, which produces the auto-generated description.
 #'
 #' @return A tibble with the same columns as `previous_results` extended with
 #'   one row per form in `attr(completeness_results, "reviewed_forms")`.
@@ -719,8 +724,10 @@ argos_check_verifications <- function(
 #'   \describe{
 #'     \item{`verif_fn`}{The string `"completeness"`.}
 #'     \item{`verification`}{A sentence describing the completeness check for
-#'       the form, e.g. `"All variables in the form 'my_form' are completed
-#'       following its branching logic."`}
+#'       the form. Defaults to
+#'       `"All variables in the form '<form>' are completed following its
+#'       branching logic."`, or `verification_text` when supplied.}
+#'     \item{`execution`}{The string `"ok"`.}
 #'     \item{`n_issues`}{Integer count of completeness issues detected in the
 #'       form.}
 #'     \item{`issues`}{A list-column element containing a tibble of individual
@@ -734,7 +741,8 @@ argos_check_verifications <- function(
 #' @export
 argos_add_completeness_results <- function(
   previous_results,
-  completeness_results
+  completeness_results,
+  verification_text = NULL
 ) {
   if (any(names(completeness_results) == "missing_value")) {
     completeness_issue_v0 <-
@@ -776,10 +784,14 @@ argos_add_completeness_results <- function(
           dplyr::filter(stringr::str_detect(.data$redcap_form_name, x))
         tibble::tibble(
           verif_fn = "completeness",
-          verification = stringr::str_c(
-            "All variables in the form '",
-            x,
-            "' are completed following its branching logic."
+          verification = dplyr::if_else(
+            is.null(verification_text),
+            stringr::str_c(
+              "All variables in the form '",
+              x,
+              "' are completed following its branching logic."
+            ),
+            verification_text
           ),
           execution = "ok",
           n_issues = nrow(issues),

@@ -784,7 +784,7 @@ argos_add_completeness_results <- function(
           dplyr::filter(stringr::str_detect(.data$redcap_form_name, x))
         tibble::tibble(
           verif_fn = "completeness",
-          verification = dplyr::if_else(
+          verification = ifelse(
             is.null(verification_text),
             stringr::str_c(
               "All variables in the form '",

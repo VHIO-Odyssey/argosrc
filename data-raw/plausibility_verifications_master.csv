@@ -9,7 +9,8 @@ date1 = 'pt_first_date', date2 = 'pt_last_date'
 date1 = 'ic_date', date2 = 'ic_date_reconsent'
 date1 = 'ttm_startdate', date2 = 'ttm_enddate'
 date1 = 'data_inici', date2 = 'data_final'
-date1 = 'conmed_startdate', date2 = 'conmed_enddate'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates located in the same form where one is known to precede the other.
+date1 = 'conmed_startdate', date2 = 'conmed_enddate'
+date1 = 'olap_startdate', date2 = 'olap_enddate'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates located in the same form where one is known to precede the other.
 verif_1;2;A given date is no later than a second given date (dates in different forms). ;interform_multiinstance;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'r_date_ic', date2 = 'ae_start_date'
 date1 = 'ic_date', date2 = 'ae_startdate'
@@ -54,4 +55,5 @@ unit";last_fu_date = 'last_fu_date', last_fu_status = 'last_fu_status';Only appl
 verif_7;1;If no end of treatment is recorded, the most recent treatment visit must fall within a specified timeframe.;interform_multiinstance;"visit_date::durva_date::ttd_20_04_ody
 end_date::eot_date::ttd_20_04_ody
 time_limit
-unit";visit_date = 'durva_date', end_date = 'eot_date';
+unit";"visit_date = 'durva_date', end_date = 'eot_date'
+visit_date = 'olap_enddate', end_date = 'eot_date'";

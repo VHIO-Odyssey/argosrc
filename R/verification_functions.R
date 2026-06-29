@@ -304,6 +304,10 @@ verif_5_1 <- function(
           .data[[overall_response]] == "Progressive Disease (PD)" ~ TRUE,
         .data[[new_lesions]] == "Yes" &
           .data[[overall_response]] == "Progressive Disease (PD)" ~ TRUE,
+        .data[[target_response]] == "Not evaluable" &
+          .data[[no_target_response]] == "Non-CR/Non-PD" &
+          .data[[new_lesions]] == "No" &
+          .data[[overall_response]] == "Not Evaluable (NE)" ~ TRUE,
         .default = FALSE
       )
     ) |>

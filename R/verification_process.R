@@ -688,8 +688,7 @@ argos_check_verifications <- function(
       rc_data,
       data_sets,
       ad_hoc_verifications_path
-    ) |>
-      dplyr::mutate(verif_origin = "adhoc", .after = "verif_fn")
+    )
 
     argos_final_result <- dplyr::bind_rows(
       argos_automatic,
@@ -977,7 +976,17 @@ argos_run_ad_hoc_verifications <- function(
         .before = 1
       )
   ) |>
-    purrr::list_rbind()
+    purrr::list_rbind() |>
+    dplyr::mutate(verif_origin = "adhoc") |>
+    dplyr::select(
+      "verif_fn",
+      "verif_origin",
+      "verif_type",
+      "verification",
+      "execution",
+      "n_issues",
+      "issues"
+    )
 }
 
 #' @title Write an Excel Verification Report

@@ -1,5 +1,5 @@
-﻿id;version;description;complexity;arguments;candidate_fields;comments
-verif_1;1;A given date is no later than a second given date (dates in same form). ;intraform;"date1::ic_date::seronco1
+﻿id;version;type;description;complexity;arguments;candidate_fields;comments
+verif_1;1;plausibility;A given date is no later than a second given date (dates in same form). ;intraform;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'ae_startdate', date2 = 'ae_enddate'
 date1 = 'ae_start_date', date2 = 'ae_end_date'
 date1 = 'sae_onset_high_severity_date', date2 = 'sae_stop_date'
@@ -11,14 +11,14 @@ date1 = 'ttm_startdate', date2 = 'ttm_enddate'
 date1 = 'data_inici', date2 = 'data_final'
 date1 = 'conmed_startdate', date2 = 'conmed_enddate'
 date1 = 'olap_startdate', date2 = 'olap_enddate'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates located in the same form where one is known to precede the other.
-verif_1;2;A given date is no later than a second given date (dates in different forms). ;interform_multiinstance;"date1::ic_date::seronco1
+verif_1;2;plausibility;A given date is no later than a second given date (dates in different forms). ;interform_multiinstance;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'r_date_ic', date2 = 'ae_start_date'
 date1 = 'ic_date', date2 = 'ae_startdate'
 date1 = 'screening_ic', date2 = 'ae_startdate'";Verification to ensure that a patient's unique date variable (date1) occurs on or before another date (date2) associated with a multi-instance form. If date1 belongs to a multi-instance form, its minimum value is used. A typical use case would be verifying that the Informed Consent (IC) date is prior to or equal to all Adverse Event (AE) start dates.
-verif_1;3;A given date is no later than a second given date (dates in different forms and 2 reference date1). ;interform_multiinstance;"date1a::ic_date::seronco1
+verif_1;3;plausibility;A given date is no later than a second given date (dates in different forms and 2 reference date1). ;interform_multiinstance;"date1a::ic_date::seronco1
 date1b::ic_date::seronco1
 date2::ic_date::seronco1";date1a = 'prescreening_ic', date1b = 'screening_ic', date2 = 'ae_startdate';In this version of verif_1 date1 is the minimum value of the variables date1a and date1b
-verif_2;1;The period between the two given dates falls within a defined range.;interform;"date1::ic_date::seronco1
+verif_2;1;plausibility;The period between the two given dates falls within a defined range.;interform;"date1::ic_date::seronco1
 date1::dob::brave
 date2::ic_date::seronco1
 date2::dob::brave
@@ -27,7 +27,7 @@ max_period
 unit";"date1 = 'dob', date2 = 'ic_date', min_period = 18, max_period = 100, unit = 'years'
 date1 = 'dob_date', date2 = 'pt_prescreening_ic_date', min_period = 18, max_period = 100, unit = 'years'
 date1 = 'dob_date', date2 = 'pt_ic_date', min_period = 18, max_period = 100, unit = 'years'";The period of time is defined from date1 to date2. Make sure date1 is the expected earlier date.
-verif_3;1;The variable's value matches the expected value.;intraform;"var_name::any
+verif_3;1;plausibility;The variable's value matches the expected value.;intraform;"var_name::any
 expected";"var_name = 'incl_\\d+', expected = 'Yes'
 var_name = 'pt_ic_question\\d+', expected = 'Yes'
 var_name = 'pt_ic_question\\d+_v2', expected = 'Yes'
@@ -38,21 +38,21 @@ var_name = 'pt_ec_question\\d+', expected = 'No'
 var_name = 'pt_ec_question\\d+_v2', expected = 'No'
 var_name = 'donor_ec_question\\d+', expected = 'No'
 var_name = 'donor_ec_question\\d+_v2', expected = 'No'";This verification accepts pattern names.
-verif_4;1;A variable's value is constant across instances.;intraform_multiinstance;var_name::any;"var_name = 'tm_n?tl_site_lesion_\\d+'
+verif_4;1;plausibility;A variable's value is constant across instances.;intraform_multiinstance;var_name::any;"var_name = 'tm_n?tl_site_lesion_\\d+'
 var_name= 'targ\\d+_organ_subs'
 var_name= 'notarg\\d+_organ_subs'";This verification accepts pattern names.
-verif_5;1;The overall RECIST response agrees with the reported responses of the target, non-target, and new lesions.;intraform;"target_response::target_lesions_response_subs::ttd_20_04_ody
+verif_5;1;plausibility;The overall RECIST response agrees with the reported responses of the target, non-target, and new lesions.;intraform;"target_response::target_lesions_response_subs::ttd_20_04_ody
 no_target_response::notarg_lesions_response_subs::ttd_20_04_ody
 no_target_response::notarg_lesions_response_subs::brave
 no_target_response::notarg_lesions_response_subs::nk_act_bc_2020
 new_lesions::new_lesion_stat::ttd_20_04_ody
 overall_response::orr::ttd_20_04_ody
 overall_response::orr::nk_act_bc_2020";target_response = 'target_lesions_response_subs', no_target_response = 'notarg_lesions_response_subs', new_lesions = 'new_lesion_stat', overall_response = 'orr';
-verif_6;1;Last follow-up of an alive patient is within the expected schelude.;intraform_multiinstance;"last_fu_date::last_fu_date::brave
+verif_6;1;completeness;Last follow-up of an alive patient is within the expected schelude.;intraform_multiinstance;"last_fu_date::last_fu_date::brave
 last_fu_status::last_fu_status::brave
 time_limit
 unit";last_fu_date = 'last_fu_date', last_fu_status = 'last_fu_status';Only applies to the last instance. If there are 0 survival instances, the check does not apply.
-verif_7;1;If no end of treatment is recorded, the most recent treatment visit must fall within a specified timeframe.;interform_multiinstance;"visit_date::durva_date::ttd_20_04_ody
+verif_7;1;completeness;If no end of treatment is recorded, the most recent treatment visit must fall within a specified timeframe.;interform_multiinstance;"visit_date::durva_date::ttd_20_04_ody
 end_date::eot_date::ttd_20_04_ody
 time_limit
 unit";"visit_date = 'durva_date', end_date = 'eot_date'

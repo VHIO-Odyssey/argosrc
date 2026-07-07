@@ -1,6 +1,6 @@
-#' Plausibility Verifications Master
+#' Argos Verifications Master
 #'
-#' Dataset containing information on plausibility verifications. The function `argos_check_verifications` uses this information to determine the applicable verifications for the current REDCap database.
+#' Dataset containing information on autodetectable verifications. The function `argos_check_verifications` uses this information to determine the applicable verifications for the current REDCap database.
 #'
 #' @format A data frame with variables:
 #' \describe{

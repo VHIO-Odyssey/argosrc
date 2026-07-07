@@ -1,6 +1,6 @@
-plausibility_verifications_master <-
+argos_verifications_master <-
   readr::read_csv2(
-    here::here("data-raw", "plausibility_verifications_master.csv")
+    here::here("data-raw", "argos_verifications_master.csv")
   ) |>
   dplyr::mutate(
     arguments_metadata = purrr::map(arguments, create_arguments_metadata),
@@ -9,6 +9,7 @@ plausibility_verifications_master <-
   dplyr::select(
     id,
     version,
+    type,
     description,
     complexity,
     arguments_metadata,
@@ -16,4 +17,4 @@ plausibility_verifications_master <-
     comments
   )
 
-usethis::use_data(plausibility_verifications_master, overwrite = TRUE)
+usethis::use_data(argos_verifications_master, overwrite = TRUE)

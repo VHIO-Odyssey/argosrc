@@ -27,6 +27,10 @@
 #        checked. This appears in the summary sheet of the Excel report.
 #      - issue_text: a glue template string that builds the issue message for
 #        each failing row. Reference column names with {column_name}.
+#      - verif_type: the type of verification. Must be one of:
+#          "plausibility"  — checks logical consistency between variables.
+#          "completeness"  — checks that expected fields are filled in.
+#          NA              — type not specified (default).
 #
 # 3. Assign the result to a variable. argos_check_verifications() will
 #    automatically detect any object in this script that has been created with
@@ -37,23 +41,18 @@
 #
 # NAMING CONVENTION — EFFECT ON THE REPORT
 # ==========================================
-# The variable name you choose controls how the verification is classified in
-# the 'verif_type' column of the Excel report:
+# The variable name you choose controls how verifications are sorted and
+# grouped in the Excel report produced by argos_write_verification_report():
 #
-#   comp_*   → classified as "completeness_adhoc"
-#              Use this prefix for ad-hoc completeness checks (e.g. checking
-#              that specific forms are filled in for a given subgroup).
+#   comp_*   → grouped as "completeness_adhoc"
+#   verif_*  → grouped as "verification_adhoc"
+#   anything else → grouped as "undefined_adhoc"
 #
-#   verif_*  → classified as "verification_adhoc"
-#              Use this prefix for ad-hoc plausibility or consistency checks.
-#
-#   anything else → classified as "undefined_adhoc"
-#
-# Within each type, verifications are sorted alphabetically by variable name
+# Within each group, verifications are sorted alphabetically by variable name
 # before being numbered in the final report.
 #
 # Examples:
-#   comp_screening_form  <- argos_add_to_verifications(...)  # completeness_adhoc
-#   verif_adverse_events <- argos_add_to_verifications(...)  # verification_adhoc
+#   comp_screening_form  <- argos_add_to_verifications(..., verif_type = "completeness")
+#   verif_adverse_events <- argos_add_to_verifications(..., verif_type = "plausibility")
 #
 # ==============================================================================

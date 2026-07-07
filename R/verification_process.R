@@ -330,6 +330,45 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
   }
 }
 
+# Internal helper to attach rc_data-derived attributes to a verification result
+# tibble. Used by both argos_check_verifications() and
+# argos_run_ad_hoc_verifications() so that their outputs are compatible with
+# argos_write_verification_report().
+attach_rc_attributes <- function(result, rc_data) {
+  project_info <- attr(rc_data, "project_info") |>
+    dplyr::select("project_id", "project_title")
+  attr(result, "redcap_project") <- project_info
+
+  attr(result, "redcap_import_date") <- attr(rc_data, "import_date")
+
+  reviewed_subjects <- attr(rc_data, "subjects")
+  dags <- attr(rc_data, "dag")
+
+  if (is.null(reviewed_subjects)) {
+    attr(result, "reviewed_subjects") <- tibble::tibble(
+      reviewed_subjects
+    ) |>
+      dplyr::arrange(.data$reviewed_subjects)
+  } else {
+    attr(result, "reviewed_subjects") <-
+      tibble::tibble(reviewed_subjects) |>
+      dplyr::left_join(
+        attr(rc_data, "subjects_dag"),
+        by = c("reviewed_subjects" = attr(rc_data, "id_var"))
+      ) |>
+      dplyr::left_join(
+        dags,
+        by = c("redcap_data_access_group" = "unique_group_name")
+      ) |>
+      dplyr::select(
+        reviewed_subjects,
+        site = "data_access_group_name"
+      ) |>
+      dplyr::arrange(.data$site, .data$reviewed_subjects)
+  }
+  result
+}
+
 #' @title Check REDCap Data for Verification Issues
 #' @description
 #'   Runs the verification catalogue on a REDCap data export and
@@ -625,40 +664,6 @@ argos_check_verifications <- function(
     argos_result <- detected_verifications_executed
   }
 
-  # Project info as attribute
-  project_info <- attr(rc_data, "project_info") |>
-    dplyr::select("project_id", "project_title")
-  attr(argos_result, "redcap_project") <- project_info
-  # Import date as attribute
-  attr(argos_result, "redcap_import_date") <- attr(rc_data, "import_date")
-
-  # Review subjects and DAGs (if any) as attribute.
-  reviewed_subjects <- attr(rc_data, "subjects")
-  dags <- attr(rc_data, "dag")
-
-  if (is.null(reviewed_subjects)) {
-    attr(argos_result, "reviewed_subjects") <- tibble::tibble(
-      reviewed_subjects
-    ) |>
-      dplyr::arrange(.data$reviewed_subjects)
-  } else {
-    attr(argos_result, "reviewed_subjects") <-
-      tibble::tibble(reviewed_subjects) |>
-      dplyr::left_join(
-        attr(rc_data, "subjects_dag"),
-        by = c("reviewed_subjects" = attr(rc_data, "id_var"))
-      ) |>
-      dplyr::left_join(
-        dags,
-        by = c("redcap_data_access_group" = "unique_group_name")
-      ) |>
-      dplyr::select(
-        reviewed_subjects,
-        site = "data_access_group_name"
-      ) |>
-      dplyr::arrange(.data$site, .data$reviewed_subjects)
-  }
-
   argos_automatic <- argos_result |>
     # Se crea una descripción de la verificación más concreta basada en los
     # argumentos utilizados.
@@ -698,7 +703,7 @@ argos_check_verifications <- function(
     argos_final_result <- argos_automatic
   }
 
-  argos_final_result
+  attach_rc_attributes(argos_final_result, rc_data)
 }
 
 
@@ -968,7 +973,7 @@ argos_run_ad_hoc_verifications <- function(
     )
   )
   to_verifications <- current_objects[verif_index]
-  purrr::map(
+  result <- purrr::map(
     to_verifications,
     ~ rlang::env_get(rlang::caller_env(3), .) |>
       dplyr::mutate(
@@ -987,6 +992,8 @@ argos_run_ad_hoc_verifications <- function(
       "n_issues",
       "issues"
     )
+
+  attach_rc_attributes(result, rc_data)
 }
 
 #' @title Write an Excel Verification Report

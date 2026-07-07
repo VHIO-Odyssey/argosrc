@@ -35,4 +35,25 @@
 # You can define as many verifications as needed. Variable names are used
 # internally as verification identifiers (verif_fn column in the result).
 #
+# NAMING CONVENTION — EFFECT ON THE REPORT
+# ==========================================
+# The variable name you choose controls how the verification is classified in
+# the 'verif_type' column of the Excel report:
+#
+#   comp_*   → classified as "completeness_adhoc"
+#              Use this prefix for ad-hoc completeness checks (e.g. checking
+#              that specific forms are filled in for a given subgroup).
+#
+#   verif_*  → classified as "verification_adhoc"
+#              Use this prefix for ad-hoc plausibility or consistency checks.
+#
+#   anything else → classified as "undefined_adhoc"
+#
+# Within each type, verifications are sorted alphabetically by variable name
+# before being numbered in the final report.
+#
+# Examples:
+#   comp_screening_form  <- argos_add_to_verifications(...)  # completeness_adhoc
+#   verif_adverse_events <- argos_add_to_verifications(...)  # verification_adhoc
+#
 # ==============================================================================

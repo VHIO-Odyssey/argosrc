@@ -365,6 +365,11 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
 #'   \describe{
 #'     \item{verif_fn}{A character string identifying the verification function,
 #'     usually formatted as `<id>_<version>`.}
+#'     \item{verif_origin}{A character string indicating the origin of the
+#'     verification: `"auto"` for verifications detected from
+#'     `argos_verifications_master`, or `"adhoc"` for ad-hoc verifications.}
+#'     \item{verif_type}{A character string with the verification type, taken
+#'     from `argos_verifications_master`. `NA` for ad-hoc verifications.}
 #'     \item{verif_arg}{A list-column of arguments used for execution. For
 #'     unresolved checks this may contain missing values; for ad-hoc rows it can
 #'     be `NA`.}
@@ -414,13 +419,13 @@ argos_check_verifications <- function(
   metadata <- attr(rc_data, "metadata")
 
   detected_verifications_v0 <-
-    plausibility_verifications_master |>
+    argos_verifications_master |>
     dplyr::mutate(
       valid_candidates = purrr::pmap(
         tibble::tibble(
-          arguments_metadata = plausibility_verifications_master$arguments_metadata,
-          candidates_mapping = plausibility_verifications_master$candidates_mapping,
-          complexity = plausibility_verifications_master$complexity
+          arguments_metadata = argos_verifications_master$arguments_metadata,
+          candidates_mapping = argos_verifications_master$candidates_mapping,
+          complexity = argos_verifications_master$complexity
         ),
         find_valid_candidates,
         metadata,
@@ -431,7 +436,12 @@ argos_check_verifications <- function(
     dplyr::mutate(
       verif_fn = stringr::str_c(.data$id, "_", .data$version)
     ) |>
-    dplyr::select("verif_fn", verif_arg = "valid_candidates", "description") |>
+    dplyr::select(
+      "verif_fn",
+      verif_type = "type",
+      verif_arg = "valid_candidates",
+      "description"
+    ) |>
     tidyr::unnest("verif_arg")
 
   if (!is.null(constants_list)) {
@@ -454,7 +464,7 @@ argos_check_verifications <- function(
     verif_extra_args <-
       purrr::map(
         verif_extra_names,
-        ~ plausibility_verifications_master |>
+        ~ argos_verifications_master |>
           dplyr::filter(
             stringr::str_c(.data$id, "_", .data$version) == .
           ) |>
@@ -664,19 +674,22 @@ argos_check_verifications <- function(
     ) |>
     dplyr::select(
       "verif_fn",
+      "verif_type",
       "verif_arg",
       "verification",
       "execution",
       "n_issues",
       "issues"
-    )
+    ) |>
+    dplyr::mutate(verif_origin = "auto", .after = "verif_fn")
 
   if (!is.null(ad_hoc_verifications_path)) {
     ad_hoc_verifications <- argos_run_ad_hoc_verifications(
       rc_data,
       data_sets,
       ad_hoc_verifications_path
-    )
+    ) |>
+      dplyr::mutate(verif_origin = "adhoc", .after = "verif_fn")
 
     argos_final_result <- dplyr::bind_rows(
       argos_automatic,
@@ -784,6 +797,8 @@ argos_add_completeness_results <- function(
           dplyr::filter(stringr::str_detect(.data$redcap_form_name, x))
         tibble::tibble(
           verif_fn = "completeness",
+          verif_origin = "auto",
+          verif_type = "completeness",
           verification = ifelse(
             is.null(verification_text),
             stringr::str_c(

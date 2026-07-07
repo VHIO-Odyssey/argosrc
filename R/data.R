@@ -6,6 +6,7 @@
 #' \describe{
 #'   \item{id}{Verification identification}
 #'   \item{version}{Verification version. Different versions are used to handle the same verification with variables of different types.}
+#'   \item{type}{The type of verification (e.g. plausibility, completeness).}
 #'   \item{description}{Short verbal description of the purpose of the verification.}
 #'   \item{comments}{Further explanations to fully understand how the verification works.}
 #'   \item{complexity}{
@@ -30,7 +31,7 @@
 #'     Possible names of the variables with which to run the verification. It is a table with as many columns as verification arguments and one row per each group of possible variable names.
 #'   }
 #' }
-"plausibility_verifications_master"
+"argos_verifications_master"
 
 
 # This functions is completely specific to the creation of the verifications

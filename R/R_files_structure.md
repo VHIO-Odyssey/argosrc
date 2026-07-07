@@ -6,7 +6,7 @@ Funciones para la configuración inicial del proyecto, ejecución del proceso de
 -   filter_issues [dplyr, glue, tidyselect]
 -   find_valid_candidates [dplyr, purrr, stringr, tibble, tidyr, tidyselect]
 -   create_verification_description [glue, stringr]
--   argos_check_verifications [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, plausibility_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
+-   argos_check_verifications [find_valid_candidates, create_verification_description, argos_run_ad_hoc_verifications, argos_verifications_master, dplyr, purrr, rlang, stringr, tibble, tidyr, tidyselect]
 -   argos_add_completeness_results [dplyr, glue, purrr, stringr, tibble, tidyselect]
 -   argos_add_to_verifications [dplyr, glue, purrr, tidyr, tidyselect]
 -   argos_run_ad_hoc_verifications [dplyr, purrr, rlang]
@@ -47,7 +47,7 @@ Funciones utilitarias internas.
 
 Dataset interno y funciones auxiliares para su construcción.
 
--   plausibility_verifications_master (dataset)
+-   argos_verifications_master (dataset)
 -   create_arguments_metadata [dplyr, odytools::ody_rc_get_metadata, purrr, stringr, tibble]
 -   create_candidates_mapping [purrr, stringr, tibble]
 

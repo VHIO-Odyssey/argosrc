@@ -7,7 +7,7 @@ if (getRversion() >= "2.15.1") {
   utils::globalVariables(
     c(
       # This is an internal dataset.
-      "plausibility_verifications_master"
+      "argos_verifications_master"
     )
   )
 }

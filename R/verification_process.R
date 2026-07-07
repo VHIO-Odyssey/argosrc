@@ -837,10 +837,14 @@ argos_add_completeness_results <- function(
 #'   verification that produced `verified_data`.
 #' @param issue_text A character string interpreted as a glue template. It can
 #'   reference columns from `verified_data` to create row-level issue messages.
+#' @param verif_type A character string indicating the type of verification.
+#'   Must be one of `"plausibility"`, `"completeness"`, or `NA_character_`
+#'   (default).
 #'
 #' @return A tibble with one row and the columns:
 #'   \describe{
 #'     \item{verification}{A character string with `verification_description`.}
+#'     \item{verif_type}{A character string with the value of `verif_type`.}
 #'     \item{execution}{A character string set to `"ok"`.}
 #'     \item{n_issues}{An integer with the number of detected issue rows.}
 #'     \item{issues}{A nested tibble containing identifier/context columns and
@@ -855,8 +859,18 @@ argos_add_completeness_results <- function(
 argos_add_to_verifications <- function(
   verified_data,
   verification_description,
-  issue_text
+  issue_text,
+  verif_type = NA_character_
 ) {
+  if (!is.na(verif_type)) {
+    verif_type <- stringr::str_to_lower(verif_type)
+  }
+  if (
+    !is.na(verif_type) && !verif_type %in% c("plausibility", "completeness")
+  ) {
+    rlang::abort('`verif_type` must be NA, "plausibility", or "completeness".')
+  }
+
   issues_tbl <-
     verified_data |>
     dplyr::filter(!.data$.ok | is.na(.data$.ok)) |>
@@ -878,6 +892,7 @@ argos_add_to_verifications <- function(
     ) |>
     tidyr::nest(issues = -"verification") |>
     dplyr::mutate(
+      verif_type = verif_type,
       execution = "ok",
       n_issues = purrr::map_int(.data$issues, nrow),
       .after = "verification"

@@ -4,7 +4,12 @@
 \alias{argos_add_to_verifications}
 \title{Build an Ad-hoc Verification Result Entry}
 \usage{
-argos_add_to_verifications(verified_data, verification_description, issue_text)
+argos_add_to_verifications(
+  verified_data,
+  verification_description,
+  issue_text,
+  verif_type = NA_character_
+)
 }
 \arguments{
 \item{verified_data}{A data frame or tibble containing verification results.
@@ -18,11 +23,16 @@ verification that produced `verified_data`.}
 
 \item{issue_text}{A character string interpreted as a glue template. It can
 reference columns from `verified_data` to create row-level issue messages.}
+
+\item{verif_type}{A character string indicating the type of verification.
+Must be one of `"plausibility"`, `"completeness"`, or `NA_character_`
+(default).}
 }
 \value{
 A tibble with one row and the columns:
   \describe{
     \item{verification}{A character string with `verification_description`.}
+    \item{verif_type}{A character string with the value of `verif_type`.}
     \item{execution}{A character string set to `"ok"`.}
     \item{n_issues}{An integer with the number of detected issue rows.}
     \item{issues}{A nested tibble containing identifier/context columns and

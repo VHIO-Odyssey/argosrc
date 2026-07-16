@@ -41,6 +41,11 @@ A tibble with one row per automatic verification (and additional rows
   \describe{
     \item{verif_fn}{A character string identifying the verification function,
     usually formatted as `<id>_<version>`.}
+    \item{verif_origin}{A character string indicating the origin of the
+    verification: `"auto"` for verifications detected from
+    `argos_verifications_master`, or `"adhoc"` for ad-hoc verifications.}
+    \item{verif_type}{A character string with the verification type, taken
+    from `argos_verifications_master`. `NA` for ad-hoc verifications.}
     \item{verif_arg}{A list-column of arguments used for execution. For
     unresolved checks this may contain missing values; for ad-hoc rows it can
     be `NA`.}

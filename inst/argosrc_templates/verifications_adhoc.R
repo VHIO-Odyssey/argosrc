@@ -41,15 +41,19 @@
 #
 # NAMING CONVENTION — EFFECT ON THE REPORT
 # ==========================================
-# The variable name you choose controls how verifications are sorted and
-# grouped in the Excel report produced by argos_write_verification_report():
+# In the Excel report produced by argos_write_verification_report(),
+# verifications are ordered by:
+#   1. verif_type  — "completeness" before "plausibility", then NA.
+#   2. verif_origin — "adhoc" (this script) before "auto" (automatic checks).
+#   3. verif_fn    — alphabetically by the variable name you assign here.
 #
-#   comp_*   → grouped as "completeness_adhoc"
-#   verif_*  → grouped as "verification_adhoc"
-#   anything else → grouped as "undefined_adhoc"
+# The group label shown in the report's 'verif_type' column comes from the
+# verif_type argument passed to argos_add_to_verifications(), not from the
+# variable name. The variable name only controls sort order within the group.
 #
-# Within each group, verifications are sorted alphabetically by variable name
-# before being numbered in the final report.
+# Recommended naming convention (for readability and predictable sort order):
+#   comp_*   — completeness verifications  (use verif_type = "completeness")
+#   verif_*  — plausibility verifications  (use verif_type = "plausibility")
 #
 # Examples:
 #   comp_screening_form  <- argos_add_to_verifications(..., verif_type = "completeness")

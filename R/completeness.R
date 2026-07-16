@@ -125,9 +125,14 @@ verify_completeness_form <- function(
 ) {
   id_var <- attr(rc_data, "id_var")
 
-  current_form <- odytools::ody_rc_select_form(
-    rc_data,
-    !!current_form_name
+  current_form <- tryCatch(
+    odytools::ody_rc_select_form(
+      rc_data,
+      !!current_form_name
+    ),
+    error = function(e) {
+      tibble::tibble()
+    }
   )
 
   if (nrow(current_form) == 0) {
@@ -139,7 +144,10 @@ verify_completeness_form <- function(
         redcap_instance_type = NA_character_,
         redcap_instance_number = NA_character_,
         variable = NA_character_,
-        completeness_issue = NA_character_
+        condition = NA_character_,
+        evaluable_condition = NA_character_,
+        completeness_issue = NA_character_,
+        missing_value = NA_character_
       ) |>
       dplyr::filter(!is.na(.data$variable))
 
@@ -176,7 +184,10 @@ verify_completeness_form <- function(
         redcap_instance_type = NA_character_,
         redcap_instance_number = NA_character_,
         variable = NA_character_,
-        completeness_issue = NA_character_
+        condition = NA_character_,
+        evaluable_condition = NA_character_,
+        completeness_issue = NA_character_,
+        missing_value = NA_character_
       ) |>
       dplyr::filter(!is.na(.data$variable))
 

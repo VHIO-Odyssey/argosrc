@@ -131,6 +131,9 @@ verify_completeness_form <- function(
       !!current_form_name
     ),
     error = function(e) {
+      cli::cli_warn(
+        "Form {.val {current_form_name}} has no data yet."
+      )
       tibble::tibble()
     }
   )

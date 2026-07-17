@@ -32,5 +32,5 @@ Imports:
     openxlsx2,
     here
 Remotes:
-    github::VHIO-Odyssey/odytools
+    github::VHIO-Odyssey/odytools@dev
 Config/roxygen2/version: 8.0.0

@@ -701,10 +701,14 @@ argos_check_verifications <- function(
       ad_hoc_verifications_path
     )
 
-    argos_final_result <- dplyr::bind_rows(
-      argos_automatic,
-      ad_hoc_verifications
-    )
+    if (nrow(argos_automatic) > 0) {
+      argos_final_result <- dplyr::bind_rows(
+        argos_automatic,
+        ad_hoc_verifications
+      )
+    } else {
+      argos_final_result <- ad_hoc_verifications
+    }
   } else {
     argos_final_result <- argos_automatic
   }

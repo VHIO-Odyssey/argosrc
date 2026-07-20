@@ -30,6 +30,7 @@
 #      - verif_type: the type of verification. Must be one of:
 #          "plausibility"  — checks logical consistency between variables.
 #          "completeness"  — checks that expected fields are filled in.
+#          "update"        — checks that data entry is up to date.
 #          NA              — type not specified (default).
 #
 # 3. Assign the result to a variable. argos_check_verifications() will
@@ -43,7 +44,7 @@
 # ==========================================
 # In the Excel report produced by argos_write_verification_report(),
 # verifications are ordered by:
-#   1. verif_type  — "completeness" before "plausibility", then NA.
+#   1. verif_type  — "completeness" before "plausibility" before "update", then NA.
 #   2. verif_origin — "adhoc" (this script) before "auto" (automatic checks).
 #   3. verif_fn    — alphabetically by the variable name you assign here.
 #
@@ -53,5 +54,6 @@
 # Examples:
 #   comp_screening_form  <- argos_add_to_verifications(..., verif_type = "completeness")
 #   verif_adverse_events <- argos_add_to_verifications(..., verif_type = "plausibility")
+#   upd_last_followup    <- argos_add_to_verifications(..., verif_type = "update")
 #
 # ==============================================================================

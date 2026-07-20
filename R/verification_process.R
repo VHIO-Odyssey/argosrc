@@ -866,8 +866,8 @@ argos_add_completeness_results <- function(
 #' @param issue_text A character string interpreted as a glue template. It can
 #'   reference columns from `verified_data` to create row-level issue messages.
 #' @param verif_type A character string indicating the type of verification.
-#'   Must be one of `"plausibility"`, `"completeness"`, or `NA_character_`
-#'   (default).
+#'   Must be one of `"plausibility"`, `"completeness"`, `"update"`, or
+#'   `NA_character_` (default).
 #'
 #' @return A tibble with one row and the columns:
 #'   \describe{
@@ -894,9 +894,12 @@ argos_add_to_verifications <- function(
     verif_type <- stringr::str_to_lower(verif_type)
   }
   if (
-    !is.na(verif_type) && !verif_type %in% c("plausibility", "completeness")
+    !is.na(verif_type) &&
+      !verif_type %in% c("plausibility", "completeness", "update")
   ) {
-    rlang::abort('`verif_type` must be NA, "plausibility", or "completeness".')
+    rlang::abort(
+      '`verif_type` must be NA, "plausibility", "completeness", or "update".'
+    )
   }
 
   issues_tbl <-
@@ -1064,10 +1067,10 @@ argos_run_ad_hoc_verifications <- function(
 #'   \code{n_issues > 0}.
 #'
 #'   The \code{verif_type} column in the report reflects the value set when
-#'   the verification was created: \code{"completeness"} or
-#'   \code{"plausibility"} (via [argos_add_to_verifications()] or
-#'   [argos_add_completeness_results()]), or \code{NA} when no type was
-#'   specified. The \code{verif_origin} column is \code{"auto"} for
+#'   the verification was created: \code{"completeness"},
+#'   \code{"plausibility"}, or \code{"update"} (via
+#'   [argos_add_to_verifications()] or [argos_add_completeness_results()]),
+#'   or \code{NA} when no type was specified. The \code{verif_origin} column is \code{"auto"} for
 #'   verifications detected automatically by [argos_check_verifications()] and
 #'   \code{"adhoc"} for verifications sourced from ad-hoc scripts.
 #'
@@ -1084,7 +1087,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
     dplyr::mutate(
       verif_type = factor(
         verif_type,
-        levels = c("completeness", "plausibility"),
+        levels = c("completeness", "plausibility", "update"),
       )
     ) |>
     dplyr::arrange(.data$verif_type, .data$verif_origin, .data$verif_fn) |>

@@ -163,6 +163,12 @@ find_valid_candidates <- function(
     forms_events_mapping <- attr(rc_data, "forms_events_mapping")
     repeating <- attr(rc_data, "repeating")
 
+    # Si el proyecto ni siquiera tiene formularios repetidos, no hay candidatos
+    # válidos para verificaciones multiinstance.
+    if (is.null(repeating)) {
+      return(NA)
+    }
+
     # Formularios repetidos
     repeating_forms <- na.omit(repeating$form_name) |> unique()
     # Formularios repetidos por pertecer a evento repertido
@@ -819,6 +825,11 @@ argos_add_completeness_results <- function(
       }
     ) |>
     purrr::list_rbind()
+
+  if (nrow(previous_results) == 0) {
+    return(completeness_nested)
+  }
+
   dplyr::bind_rows(
     previous_results,
     completeness_nested

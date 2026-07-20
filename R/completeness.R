@@ -228,7 +228,10 @@ verify_completeness_form <- function(
 
       cond_variables <- stringr::str_extract_all(
         as.character(current_condition),
-        stringr::str_c(all_variables, collapse = "|")
+        stringr::str_c(
+          all_variables[order(nchar(all_variables), decreasing = TRUE)],
+          collapse = "|"
+        )
       ) |>
         unlist() |>
         unique()

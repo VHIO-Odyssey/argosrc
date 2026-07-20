@@ -48,12 +48,7 @@
 #   3. verif_fn    — alphabetically by the variable name you assign here.
 #
 # The group label shown in the report's 'verif_type' column comes from the
-# verif_type argument passed to argos_add_to_verifications(), not from the
-# variable name. The variable name only controls sort order within the group.
-#
-# Recommended naming convention (for readability and predictable sort order):
-#   comp_*   — completeness verifications  (use verif_type = "completeness")
-#   verif_*  — plausibility verifications  (use verif_type = "plausibility")
+# verif_type argument passed to argos_add_to_verifications().
 #
 # Examples:
 #   comp_screening_form  <- argos_add_to_verifications(..., verif_type = "completeness")

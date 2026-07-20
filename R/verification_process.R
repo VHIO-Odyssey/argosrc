@@ -827,6 +827,19 @@ argos_add_completeness_results <- function(
     purrr::list_rbind()
 
   if (nrow(previous_results) == 0) {
+    attr(completeness_nested, "redcap_project") <- attr(
+      previous_results,
+      "redcap_project"
+    )
+    attr(completeness_nested, "redcap_import_date") <- attr(
+      previous_results,
+      "redcap_import_date"
+    )
+    attr(completeness_nested, "reviewed_subjects") <- attr(
+      previous_results,
+      "reviewed_subjects"
+    )
+
     return(completeness_nested)
   }
 

@@ -1,3 +1,40 @@
+#' Extra conditions for RECIST assessment baseline form
+#'
+#' A named list of extra branching conditions for use with the
+#' `extra_conditions_list` argument of [argos_check_completeness()]. It covers
+#' the completeness logic of cascading lesion fields in a typical RECIST
+#' baseline assessment form, where the number of lesions entered determines
+#' which downstream fields are required.
+#'
+#' @format
+#' A named list of 42 character strings. Each name is a REDCap variable name
+#' and each value is an R expression (as a string) that evaluates to `TRUE`
+#' when the variable is expected to have a value. The list covers two groups:
+#'
+#' **Target lesions** (`targ2_*` – `targ5_*`, 12 entries):
+#' Fields for lesions 2–5 are required only when the preceding lesion exists,
+#' implementing a cascading hierarchy. The terminal lesion (`targ5_organ`) is
+#' never expected (`"FALSE"`). Measurement (`_mm`) and description
+#' (`_description`) fields are required whenever their corresponding organ
+#' field is present.
+#'
+#' **Non-target lesions** (`notarg1_*` – `notarg10_*`, 30 entries):
+#' Analogous cascading hierarchy for up to 10 non-target lesions. Each lesion
+#' also has a status field (`_stat`) required when the organ field is present.
+#'
+#' @seealso [argos_check_completeness()]
+#'
+#' @examples
+#' \dontrun{
+#' argos_check_completeness(
+#'   rc_data,
+#'   forms = "recist_assessment_baseline",
+#'   extra_conditions_list = argos_conditions_recist_assessment_baseline
+#' )
+#' }
+"argos_conditions_recist_assessment_baseline"
+
+
 #' Argos Verifications Master
 #'
 #' Dataset containing information on autodetectable verifications. The function `argos_check_verifications` uses this information to determine the applicable verifications for the current REDCap database.

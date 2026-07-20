@@ -1,6 +1,6 @@
 # Lista de codiciones extra que se pueden utilizar en argos_check_competeness
 
-argos_extra_conditions_list <- list(
+argos_conditions_recist_assessment_baseline <- list(
   targ2_organ = "target_stat == '1' & !is.na(targ3_organ)",
   targ3_organ = "target_stat == '1' & !is.na(targ4_organ)",
   targ4_organ = "target_stat == '1' & !is.na(targ5_organ)",
@@ -45,4 +45,4 @@ argos_extra_conditions_list <- list(
   notarg10_stat = "!is.na(notarg10_organ)"
 )
 
-usethis::use_data(argos_extra_conditions_list, overwrite = TRUE)
+usethis::use_data(argos_conditions_recist_assessment_baseline, overwrite = TRUE)

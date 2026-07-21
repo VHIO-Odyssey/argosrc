@@ -1208,5 +1208,9 @@ argos_write_verification_report <- function(argos_results, file_path) {
       ".xlsx"
     )
   }
+
+  cli::cli_alert_info(
+    "Writing verification report to {.file {here::here(final_file_path)}}"
+  )
   openxlsx2::wb_save(wb, here::here(final_file_path))
 }

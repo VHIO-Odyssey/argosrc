@@ -1143,6 +1143,24 @@ argos_write_verification_report <- function(argos_results, file_path) {
       cols = 1:ncol(results_excel),
       widths = "auto"
     )
+  # Add hyperlinks in verif_num column for verifications with issues
+  for (v in verif_num_issues) {
+    dims <- paste0("D", v + 1)
+    wb <- openxlsx2::wb_add_hyperlink(
+      wb,
+      sheet = "verifications",
+      dims = dims,
+      target = sprintf("verif_%d!A1", v),
+      tooltip = sprintf("Go to verif_%d", v),
+      is_external = FALSE
+    ) |>
+      openxlsx2::wb_add_font(
+        sheet = "verifications",
+        dims = dims,
+        color = openxlsx2::wb_color(hex = "FF0563C1"),
+        underline = "single"
+      )
+  }
   for (i in verif_num_issues) {
     issues <- results_excel$issues[[i]]
     sheet_name <- paste0("verif_", results_excel$verif_num[i])

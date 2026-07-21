@@ -19,3 +19,42 @@ safe_condition_definition <- function(.data, condition_expr) {
     }
   )
 }
+
+# Auto update del paquetwe via add-in
+update_argosrc <- function() {
+  rlang::check_installed("pak")
+
+  current_version <- as.character(packageVersion("argosrc"))
+
+  sure <- rstudioapi::showQuestion(
+    "Update argosrc from GitHub",
+    stringr::str_c(
+      "Do you want to update argosrc? (current version ",
+      current_version,
+      ")"
+    )
+  )
+
+  if (!sure) {
+    stop("Update aborted")
+  }
+
+  if ("argosrc" %in% (.packages())) {
+    detach("package:argosrc", unload = TRUE)
+  }
+
+  master_branch <- rstudioapi::showQuestion(
+    "Update argosrc from GitHub",
+    "From which branch do you want to update?",
+    ok = "Master",
+    cancel = "Dev"
+  )
+
+  if (master_branch) {
+    pak::pkg_install("VHIO-Odyssey/argosrc")
+  } else {
+    pak::pkg_install("VHIO-Odyssey/argosrc@dev")
+  }
+
+  require("argosrc")
+}

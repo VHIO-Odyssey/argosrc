@@ -34,3 +34,5 @@ Imports:
 Remotes:
     github::VHIO-Odyssey/odytools@dev
 Config/roxygen2/version: 8.0.0
+Suggests: 
+    pak

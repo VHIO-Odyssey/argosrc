@@ -1,0 +1,4 @@
+Name: Update argosrc
+Description: Update argosrc from GitHub.
+Binding: update_argosrc
+Interactive: false

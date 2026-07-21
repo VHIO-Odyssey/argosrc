@@ -1164,6 +1164,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
   for (i in verif_num_issues) {
     issues <- results_excel$issues[[i]]
     sheet_name <- paste0("verif_", results_excel$verif_num[i])
+    back_link_dims <- paste0("A", nrow(issues) + 2)
     wb <- openxlsx2::wb_add_worksheet(wb, sheet_name) |>
       openxlsx2::wb_add_data_table(
         x = issues,
@@ -1172,6 +1173,21 @@ argos_write_verification_report <- function(argos_results, file_path) {
       openxlsx2::wb_set_col_widths(
         cols = 1:ncol(issues),
         widths = "auto"
+      ) |>
+      openxlsx2::wb_add_data(
+        x = "\u2190 Back to verifications",
+        dims = back_link_dims
+      ) |>
+      openxlsx2::wb_add_hyperlink(
+        dims = back_link_dims,
+        target = "verifications!A1",
+        tooltip = "Back to verifications",
+        is_external = FALSE
+      ) |>
+      openxlsx2::wb_add_font(
+        dims = back_link_dims,
+        color = openxlsx2::wb_color(hex = "FF0563C1"),
+        underline = "single"
       )
   }
   import_date <- attr(argos_results, "redcap_import_date") |>

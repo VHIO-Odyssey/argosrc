@@ -12,14 +12,19 @@ date1 = 'data_inici', date2 = 'data_final'
 date1 = 'conmed_startdate', date2 = 'conmed_enddate'
 date1 = 'olap_startdate', date2 = 'olap_enddate'
 date1 = 'ibrutinib_start_date', date2 = 'ibrutinib_end_date'
-date1= 'ae_fecha_inicio', date2 = 'ae_fecha_fin'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates located in the same form where one is known to precede the other.
-verif_1;2;plausibility;A given date is no later than a second given date (dates in different forms). ;interform_multiinstance;"date1::ic_date::seronco1
+date1= 'ae_fecha_inicio', date2 = 'ae_fecha_fin'
+date1 = 'last_fu_date', date2 = 'death_date'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates located in the same form where one is known to precede the other.
+verif_1;2;plausibility;A given date is no later than a second given date (dates in different forms, multiinstance). ;interform_multiinstance;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'r_date_ic', date2 = 'ae_start_date'
 date1 = 'ic_date', date2 = 'ae_startdate'
-date1 = 'screening_ic', date2 = 'ae_startdate'";Verification to ensure that a patient's unique date variable (date1) occurs on or before another date (date2) associated with a multi-instance form. If date1 belongs to a multi-instance form, its minimum value is used. A typical use case would be verifying that the Informed Consent (IC) date is prior to or equal to all Adverse Event (AE) start dates.
+date1 = 'screening_ic', date2 = 'ae_startdate'
+date1 = 'ibrutinib_start_date', date2 = 'ae_fecha_inicio'";Verification to ensure that a patient's unique date variable (date1) occurs on or before another date (date2) associated with a multi-instance form. If date1 belongs to a multi-instance form, its minimum value is used. A typical use case would be verifying that the Informed Consent (IC) date is prior to or equal to all Adverse Event (AE) start dates.
 verif_1;3;plausibility;A given date is no later than a second given date (dates in different forms and 2 reference date1). ;interform_multiinstance;"date1a::ic_date::seronco1
 date1b::ic_date::seronco1
 date2::ic_date::seronco1";date1a = 'prescreening_ic', date1b = 'screening_ic', date2 = 'ae_startdate';In this version of verif_1 date1 is the minimum value of the variables date1a and date1b
+verif_1;4;plausibility;A given date is no later than a second given date (dates in different forms, single intance). ;interform;"date1::ic_date::seronco1
+date2::ic_date::seronco1";"date1 = 'ibrutinib_start_date', date2 = 'global_response_date'
+date1 = 'ibrutinib_end_date', date2 = 'last_fu_date'";This verification is like verif_1_2, but tboth date1 and date2 muat belong to non-repeating forms
 verif_2;1;plausibility;The period between the two given dates falls within a defined range.;interform;"date1::ic_date::seronco1
 date1::dob::brave
 date2::ic_date::seronco1

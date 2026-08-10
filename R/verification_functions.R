@@ -164,6 +164,66 @@ verif_1_3 <- function(rc_data, date1a, date1b, date2) {
     )
 }
 
+verif_1_4 <- function(rc_data, date1, date2) {
+  # date1 is expected to be from a unique form.
+  # In case date1 comes from a repating form, the check is performed on th
+  # minimun date1
+  date1_tbl <-
+    odytools::ody_rc_select(
+      rc_data,
+      !!date1,
+      .accept_form_name = FALSE
+    ) |>
+    # only non missing cases (missingness is a completeness issue, not a
+    # plausibility issue)
+    dplyr::filter_out(is.na(.data[[date1]])) |>
+    dplyr::group_by(.data[[attr(rc_data, "id_var")]]) |>
+    dplyr::filter(.data[[date1]] == min(.data[[date1]])) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::rename_with(
+      ~ stringr::str_c(., "_", date1),
+      dplyr::starts_with("redcap")
+    )
+
+  # date2 is expected to be from a unique form.
+  # In case date2 comes from a repating form, the check is performed on th
+  # minimun date2
+  date2_tbl <-
+    odytools::ody_rc_select(
+      rc_data,
+      !!date2,
+      .accept_form_name = FALSE
+    ) |>
+    # only non missing cases (missingness is a completeness issue, not a
+    # plausibility issue)
+    dplyr::filter_out(is.na(.data[[date2]])) |>
+    dplyr::group_by(.data[[attr(rc_data, "id_var")]]) |>
+    dplyr::filter(.data[[date2]] == min(.data[[date2]])) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup() |>
+    dplyr::rename_with(
+      ~ stringr::str_c(., "_", date2),
+      dplyr::starts_with("redcap")
+    )
+
+  dplyr::inner_join(
+    date1_tbl,
+    date2_tbl,
+    by = attr(rc_data, "id_var")
+  ) |>
+    odytools::ody_rc_format() |>
+    dplyr::mutate(
+      .ok = .data[[date1]] <= .data[[date2]]
+    ) |>
+    filter_issues(
+      issue_text = glue::glue(
+        "{date1} (<<{date1}>>) is after {date2} (<<{date2}>>)."
+      )
+    )
+}
+
+
 verif_2_1 <- function(rc_data, date1, date2, min_period, max_period, unit) {
   # Interform
 

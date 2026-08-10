@@ -171,25 +171,31 @@ find_valid_candidates <- function(
 
     # Formularios repetidos
     repeating_forms <- na.omit(repeating$form_name) |> unique()
-    # Formularios repetidos por pertecer a evento repertido
-    repeating_events <- repeating |>
-      dplyr::filter(is.na(.data$form_name)) |>
-      dplyr::pull("event_name") |>
-      unique()
-    repeating_forms_event <- forms_events_mapping |>
-      dplyr::filter(.data$unique_event_name %in% repeating_events) |>
-      dplyr::pull("form") |>
-      unique()
-    # Formularios repetidos por aparecer en más de un evento (aunque ni el
-    # evento ni el formulario sean repertidos per se)
-    multievent_forms <-
-      dplyr::count(forms_events_mapping, .data$form) |>
-      dplyr::filter(.data$n > 1) |>
-      dplyr::pull("form") |>
-      unique()
 
-    all_repeating_forms <- union(repeating_forms, repeating_forms_event) |>
-      union(multievent_forms)
+    # Posibles repeticiones de formulario debido a los eventos.
+    if (!is.null(forms_events_mapping)) {
+      # Formularios repetidos por pertecer a evento repertido
+      repeating_events <- repeating |>
+        dplyr::filter(is.na(.data$form_name)) |>
+        dplyr::pull("event_name") |>
+        unique()
+      repeating_forms_event <- forms_events_mapping |>
+        dplyr::filter(.data$unique_event_name %in% repeating_events) |>
+        dplyr::pull("form") |>
+        unique()
+      # Formularios repetidos por aparecer en más de un evento (aunque ni el
+      # evento ni el formulario sean repertidos per se)
+      multievent_forms <-
+        dplyr::count(forms_events_mapping, .data$form) |>
+        dplyr::filter(.data$n > 1) |>
+        dplyr::pull("form") |>
+        unique()
+
+      all_repeating_forms <- union(repeating_forms, repeating_forms_event) |>
+        union(multievent_forms)
+    } else {
+      all_repeating_forms <- repeating_forms
+    }
 
     is_repeating_form <- purrr::map_lgl(
       distinct_forms,
@@ -297,15 +303,19 @@ find_valid_candidates <- function(
 create_verification_description <- function(verif_fn, verif_arg, description) {
   if (verif_fn == "verif_1_1") {
     glue::glue(
-      "{verif_arg$date1} is before {verif_arg$date2}"
+      "{verif_arg$date1} is before (or equal to) {verif_arg$date2}"
     )
   } else if (verif_fn == "verif_1_2") {
     glue::glue(
-      "{verif_arg$date1} is before {verif_arg$date2} for all instances"
+      "{verif_arg$date1} is before (or equal to) {verif_arg$date2} for all instances"
     )
   } else if (verif_fn == "verif_1_3") {
     glue::glue(
-      "{verif_arg$date1a} or {verif_arg$date1b} (the first one) is before {verif_arg$date2} for all instances"
+      "{verif_arg$date1a} or {verif_arg$date1b} (the first one) is before (or equal to) {verif_arg$date2} for all instances"
+    )
+  } else if (verif_fn == "verif_1_4") {
+    glue::glue(
+      "{verif_arg$date1} is before (or equal to) {verif_arg$date2}"
     )
   } else if (verif_fn == "verif_2_1") {
     glue::glue(

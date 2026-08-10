@@ -75,7 +75,8 @@ filter_issues <- function(verified_data, issue_text) {
         "^redcap_instance_number"
       )),
       .data$issue
-    )
+    ) |>
+    dplyr::select(dplyr::where(~ !all(is.na(.))))
 }
 
 # Internal helper to find valid set of arguments for each verification.

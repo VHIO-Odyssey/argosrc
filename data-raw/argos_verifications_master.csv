@@ -10,7 +10,9 @@ date1 = 'ic_date', date2 = 'ic_date_reconsent'
 date1 = 'ttm_startdate', date2 = 'ttm_enddate'
 date1 = 'data_inici', date2 = 'data_final'
 date1 = 'conmed_startdate', date2 = 'conmed_enddate'
-date1 = 'olap_startdate', date2 = 'olap_enddate'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates located in the same form where one is known to precede the other.
+date1 = 'olap_startdate', date2 = 'olap_enddate'
+date1 = 'ibrutinib_start_date', date2 = 'ibrutinib_end_date'
+date1= 'ae_fecha_inicio', date2 = 'ae_fecha_fin'";It is assumed that date1 is the earlier date. This check is typically used for start and end date pairs, but it also applies to any pair of dates located in the same form where one is known to precede the other.
 verif_1;2;plausibility;A given date is no later than a second given date (dates in different forms). ;interform_multiinstance;"date1::ic_date::seronco1
 date2::ic_date::seronco1";"date1 = 'r_date_ic', date2 = 'ae_start_date'
 date1 = 'ic_date', date2 = 'ae_startdate'

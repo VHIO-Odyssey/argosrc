@@ -59,6 +59,15 @@ argos_add_folders <- function() {
 
 # Plausability related general functions
 
+# Internal helper to drop columns that are entirely NA. Used to keep issue
+# tables (which end up in the Excel report produced by
+# argos_write_verification_report()) free of columns that carry no
+# information, regardless of which function generated the issues (automatic
+# verifications, ad-hoc verifications, or completeness checks).
+drop_all_na_cols <- function(df) {
+  dplyr::select(df, dplyr::where(~ !all(is.na(.))))
+}
+
 # Internal helper to filter issues from the verified data and glue the issue text
 filter_issues <- function(verified_data, issue_text) {
   verified_data |>
@@ -76,7 +85,7 @@ filter_issues <- function(verified_data, issue_text) {
       )),
       .data$issue
     ) |>
-    dplyr::select(dplyr::where(~ !all(is.na(.))))
+    drop_all_na_cols()
 }
 
 # Internal helper to find valid set of arguments for each verification.
@@ -819,7 +828,8 @@ argos_add_completeness_results <- function(
       attr(completeness_results, "reviewed_forms"),
       function(x) {
         issues <- completeness_issue |>
-          dplyr::filter(stringr::str_detect(.data$redcap_form_name, x))
+          dplyr::filter(stringr::str_detect(.data$redcap_form_name, x)) |>
+          drop_all_na_cols()
         tibble::tibble(
           verif_fn = "completeness",
           verif_origin = "auto",
@@ -933,6 +943,7 @@ argos_add_to_verifications <- function(
       )),
       "issue"
     ) |>
+    drop_all_na_cols() |>
     dplyr::mutate(
       verification = verification_description
     ) |>

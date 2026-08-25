@@ -23,6 +23,7 @@ safe_condition_definition <- function(.data, condition_expr) {
 # Auto update del paquetwe via add-in
 update_argosrc <- function() {
   rlang::check_installed("pak")
+  rlang::check_installed("rstudioapi")
 
   current_version <- as.character(packageVersion("argosrc"))
 

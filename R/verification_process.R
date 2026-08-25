@@ -1153,9 +1153,18 @@ argos_write_verification_report <- function(argos_results, file_path) {
     openxlsx2::wb_add_worksheet("verifications") |>
     openxlsx2::wb_add_data_table(
       x = results_excel |>
+        dplyr::mutate(
+          verif_source = stringr::str_c(
+            .data$verif_origin,
+            " (",
+            .data$verif_fn,
+            ")"
+          )
+        ) |>
         dplyr::select(
           "verif_num",
           "verif_type",
+          "verif_source",
           "verification",
           "n_issues"
         ),

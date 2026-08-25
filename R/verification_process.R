@@ -1176,7 +1176,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
     )
   # Add hyperlinks in verif_num column for verifications with issues
   for (v in verif_num_issues) {
-    dims <- paste0("D", v + 1)
+    dims <- paste0("E", v + 1)
     wb <- openxlsx2::wb_add_hyperlink(
       wb,
       sheet = "verifications",

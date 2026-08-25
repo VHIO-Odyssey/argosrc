@@ -9,7 +9,9 @@ export(argos_count_forms)
 export(argos_run_ad_hoc_verifications)
 export(argos_write_forms_matrix)
 export(argos_write_verification_report)
-importFrom(rlang,":=")
-importFrom(rlang,.data)
-importFrom(rlang,.env)
+importFrom(rlang,
+  ":=",
+  .data,
+  .env
+)
 importFrom(stats,na.omit)

@@ -1,4 +1,4 @@
-# Lista de codiciones extra que se pueden utilizar en argos_check_competeness
+# Listas de codiciones extra que se pueden utilizar en argos_check_competeness
 
 argos_conditions_recist_assessment_baseline <- list(
   targ2_organ = "target_stat == '1' & (!is.na(targ3_organ) | !is.na(targ4_organ) | !is.na(targ5_organ))",

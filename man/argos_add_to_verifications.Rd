@@ -25,8 +25,8 @@ verification that produced `verified_data`.}
 reference columns from `verified_data` to create row-level issue messages.}
 
 \item{verif_type}{A character string indicating the type of verification.
-Must be one of `"plausibility"`, `"completeness"`, or `NA_character_`
-(default).}
+Must be one of `"plausibility"`, `"completeness"`, `"update"`, or
+`NA_character_` (default).}
 }
 \value{
 A tibble with one row and the columns:

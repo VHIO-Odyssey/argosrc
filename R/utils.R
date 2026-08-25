@@ -25,7 +25,7 @@ update_argosrc <- function() {
   rlang::check_installed("pak")
   rlang::check_installed("rstudioapi")
 
-  current_version <- as.character(packageVersion("argosrc"))
+  current_version <- as.character(utils::packageVersion("argosrc"))
 
   sure <- rstudioapi::showQuestion(
     "Update argosrc from GitHub",

@@ -1112,7 +1112,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
     dplyr::filter(.data$execution == "ok") |>
     dplyr::mutate(
       verif_type = factor(
-        verif_type,
+        .data$verif_type,
         levels = c("completeness", "plausibility", "update"),
       )
     ) |>

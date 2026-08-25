@@ -52,10 +52,10 @@ Only rows where \code{execution == "ok"} are included. Verifications are
   \code{n_issues > 0}.
 
   The \code{verif_type} column in the report reflects the value set when
-  the verification was created: \code{"completeness"} or
-  \code{"plausibility"} (via [argos_add_to_verifications()] or
-  [argos_add_completeness_results()]), or \code{NA} when no type was
-  specified. The \code{verif_origin} column is \code{"auto"} for
+  the verification was created: \code{"completeness"},
+  \code{"plausibility"}, or \code{"update"} (via
+  [argos_add_to_verifications()] or [argos_add_completeness_results()]),
+  or \code{NA} when no type was specified. The \code{verif_origin} column is \code{"auto"} for
   verifications detected automatically by [argos_check_verifications()] and
   \code{"adhoc"} for verifications sourced from ad-hoc scripts.
 

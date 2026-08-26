@@ -559,6 +559,8 @@ argos_check_completeness <- function(
 
   if (format == "raw") {
     attr(completeness_result, "reviewed_forms") <- forms
+    attr(completeness_result, "reviewed_subjects") <-
+      build_reviewed_subjects(rc_data)
     return(completeness_result)
   }
 

@@ -65,6 +65,12 @@ argos_add_folders <- function() {
 # information, regardless of which function generated the issues (automatic
 # verifications, ad-hoc verifications, or completeness checks).
 drop_all_na_cols <- function(df) {
+  # all(is.na(.)) on a zero-row column vacuously returns TRUE, which would
+  # drop every column. Skip the filtering in that case so 0-row tibbles keep
+  # their columns.
+  if (nrow(df) == 0) {
+    return(df)
+  }
   dplyr::select(df, dplyr::where(~ !all(is.na(.))))
 }
 
@@ -356,28 +362,20 @@ create_verification_description <- function(verif_fn, verif_arg, description) {
   }
 }
 
-# Internal helper to attach rc_data-derived attributes to a verification result
-# tibble. Used by both argos_check_verifications() and
-# argos_run_ad_hoc_verifications() so that their outputs are compatible with
-# argos_write_verification_report().
-attach_rc_attributes <- function(result, rc_data) {
-  project_info <- attr(rc_data, "project_info") |>
-    dplyr::select("project_id", "project_title")
-  attr(result, "redcap_project") <- project_info
-
-  attr(result, "redcap_import_date") <- attr(rc_data, "import_date")
-
+# Internal helper to build the reviewed_subjects tibble from rc_data. When the
+# project has DAGs configured, subjects are enriched with their site; otherwise
+# only the subject ids are returned. Shared by attach_rc_attributes() and
+# argos_check_completeness() so that reviewed_subjects is computed
+# consistently everywhere.
+build_reviewed_subjects <- function(rc_data) {
   reviewed_subjects <- attr(rc_data, "subjects")
   dags <- attr(rc_data, "dag")
 
-  if (is.null(reviewed_subjects)) {
-    attr(result, "reviewed_subjects") <- tibble::tibble(
-      reviewed_subjects
-    ) |>
+  if (is.null(dags)) {
+    tibble::tibble(reviewed_subjects) |>
       dplyr::arrange(.data$reviewed_subjects)
   } else {
-    attr(result, "reviewed_subjects") <-
-      tibble::tibble(reviewed_subjects) |>
+    tibble::tibble(reviewed_subjects) |>
       dplyr::left_join(
         attr(rc_data, "subjects_dag"),
         by = c("reviewed_subjects" = attr(rc_data, "id_var"))
@@ -392,6 +390,28 @@ attach_rc_attributes <- function(result, rc_data) {
       ) |>
       dplyr::arrange(.data$site, .data$reviewed_subjects)
   }
+}
+
+# Internal helper to attach rc_data-derived attributes to a verification result
+# tibble. Used by both argos_check_verifications() and
+# argos_run_ad_hoc_verifications() so that their outputs are compatible with
+# argos_write_verification_report().
+attach_rc_attributes <- function(result, rc_data) {
+  project_info <- attr(rc_data, "project_info") |>
+    dplyr::select("project_id", "project_title")
+  attr(result, "redcap_project") <- project_info
+
+  attr(result, "redcap_import_date") <- attr(rc_data, "import_date")
+
+  reviewed_subjects <- build_reviewed_subjects(rc_data)
+  # If a verification failed to execute (execution != "ok"), issues is NULL
+  # and n_issues is NA; reviewed_subjects should stay NULL too, since the
+  # verification was never actually applied to any subject.
+  result$reviewed_subjects <- purrr::map(
+    result$execution,
+    ~ if (identical(., "ok")) reviewed_subjects else NULL
+  )
+
   result
 }
 
@@ -851,6 +871,11 @@ argos_add_completeness_results <- function(
     ) |>
     purrr::list_rbind()
 
+  completeness_nested$reviewed_subjects <- rep(
+    list(attr(completeness_results, "reviewed_subjects")),
+    nrow(completeness_nested)
+  )
+
   if (nrow(previous_results) == 0) {
     attr(completeness_nested, "redcap_project") <- attr(
       previous_results,
@@ -860,18 +885,20 @@ argos_add_completeness_results <- function(
       previous_results,
       "redcap_import_date"
     )
-    attr(completeness_nested, "reviewed_subjects") <- attr(
-      previous_results,
-      "reviewed_subjects"
-    )
 
     return(completeness_nested)
   }
 
-  dplyr::bind_rows(
+  result <- dplyr::bind_rows(
     previous_results,
     completeness_nested
   )
+  attr(result, "redcap_project") <- attr(previous_results, "redcap_project")
+  attr(result, "redcap_import_date") <- attr(
+    previous_results,
+    "redcap_import_date"
+  )
+  result
 }
 
 #' @title Build an Ad-hoc Verification Result Entry
@@ -927,7 +954,7 @@ argos_add_to_verifications <- function(
     )
   }
 
-  issues_tbl <-
+  issues <-
     verified_data |>
     dplyr::filter(!.data$.ok | is.na(.data$.ok)) |>
     dplyr::mutate(
@@ -943,17 +970,20 @@ argos_add_to_verifications <- function(
       )),
       "issue"
     ) |>
-    drop_all_na_cols() |>
-    dplyr::mutate(
-      verification = verification_description
-    ) |>
-    tidyr::nest(issues = -"verification") |>
-    dplyr::mutate(
-      verif_type = verif_type,
-      execution = "ok",
-      n_issues = purrr::map_int(.data$issues, nrow),
-      .after = "verification"
-    )
+    drop_all_na_cols()
+
+  # Se construye la fila resumen explícitamente (en vez de usar
+  # tidyr::nest(issues = -"verification")) porque, cuando `issues` tiene 0
+  # filas, no hay ningún valor de `verification` sobre el que agrupar y
+  # nest() devolvería una tibble de 0 filas en lugar de una fila con
+  # n_issues = 0.
+  issues_tbl <- tibble::tibble(
+    verification = verification_description,
+    verif_type = verif_type,
+    execution = "ok",
+    n_issues = nrow(issues),
+    issues = list(issues)
+  )
 
   attr(issues_tbl, "add_to_verifications") <- TRUE
   issues_tbl

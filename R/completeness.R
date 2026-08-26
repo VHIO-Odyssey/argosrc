@@ -440,6 +440,11 @@ verify_completeness_form <- function(
 #'   these rows are marked `evaluable_condition = "No"`. If `FALSE`, such
 #'   rows are silently dropped and the `evaluable_condition` column is removed
 #'   from the output.
+#' @param cohort_description A character scalar describing the cohort of
+#'   subjects the completeness check was applied to (e.g. `"All subjects"`,
+#'   or `"Subjects enrolled before 2024-01-01"`), or `NA_character_`
+#'   (default). Stored as the `"cohort_description"` attribute when
+#'   `format = "raw"`, for later use by [argos_add_completeness_results()].
 #'
 #' @return A tibble where each row corresponds to a completeness issue
 #'   detected for a specific subject, variable, and (if applicable) event and
@@ -470,7 +475,10 @@ verify_completeness_form <- function(
 #'       if no user-defined missing values are detected.}
 #'   }
 #'   When `format = "raw"`, the returned tibble carries a `"reviewed_forms"`
-#'   attribute listing the forms that were checked.
+#'   attribute listing the forms that were checked, a `"reviewed_subjects"`
+#'   attribute (subjects reviewed, with `site` when the project uses DAGs),
+#'   and a `"cohort_description"` attribute copying the `cohort_description`
+#'   argument.
 #'
 #' @details
 #'   ## Branching logic resolution
@@ -500,7 +508,8 @@ argos_check_completeness <- function(
   check_for = c("missing", "unexpected", "both"),
   extra_conditions_list = NULL,
   format = c("raw", "friendly"),
-  include_non_evaluable_conditions = TRUE
+  include_non_evaluable_conditions = TRUE,
+  cohort_description = NA_character_
 ) {
   check_for <- rlang::arg_match(check_for)
   format <- rlang::arg_match(format)
@@ -561,6 +570,7 @@ argos_check_completeness <- function(
     attr(completeness_result, "reviewed_forms") <- forms
     attr(completeness_result, "reviewed_subjects") <-
       build_reviewed_subjects(rc_data)
+    attr(completeness_result, "cohort_description") <- cohort_description
     return(completeness_result)
   }
 

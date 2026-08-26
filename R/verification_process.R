@@ -396,7 +396,11 @@ build_reviewed_subjects <- function(rc_data) {
 # tibble. Used by both argos_check_verifications() and
 # argos_run_ad_hoc_verifications() so that their outputs are compatible with
 # argos_write_verification_report().
-attach_rc_attributes <- function(result, rc_data) {
+attach_rc_attributes <- function(
+  result,
+  rc_data,
+  cohort_description = NA_character_
+) {
   project_info <- attr(rc_data, "project_info") |>
     dplyr::select("project_id", "project_title")
   attr(result, "redcap_project") <- project_info
@@ -405,11 +409,17 @@ attach_rc_attributes <- function(result, rc_data) {
 
   reviewed_subjects <- build_reviewed_subjects(rc_data)
   # If a verification failed to execute (execution != "ok"), issues is NULL
-  # and n_issues is NA; reviewed_subjects should stay NULL too, since the
-  # verification was never actually applied to any subject.
+  # and n_issues is NA; reviewed_subjects and cohort_description should stay
+  # NA/NULL too, since the verification was never actually applied to any
+  # subject.
   result$reviewed_subjects <- purrr::map(
     result$execution,
     ~ if (identical(., "ok")) reviewed_subjects else NULL
+  )
+  result$cohort_description <- ifelse(
+    result$execution == "ok",
+    cohort_description,
+    NA_character_
   )
 
   result
@@ -444,6 +454,11 @@ attach_rc_attributes <- function(result, rc_data) {
 #' @param data_sets A named list of auxiliary objects, or `NULL`. These objects
 #'   are passed to ad-hoc scripts via [argos_run_ad_hoc_verifications()] as
 #'   `datasets` and are ignored when `ad_hoc_verifications_path` is `NULL`.
+#' @param cohort_description A character scalar describing the cohort of
+#'   subjects the verifications were applied to (e.g. `"All subjects"`, or
+#'   `"Subjects enrolled before 2024-01-01"`), or `NA_character_` (default).
+#'   Stored as-is in the `cohort_description` column of the result, repeated
+#'   across all successfully executed rows.
 #'
 #' @return A tibble with one row per automatic verification (and additional rows
 #'   from ad-hoc scripts when provided).
@@ -466,6 +481,12 @@ attach_rc_attributes <- function(result, rc_data) {
 #'     `NA` when execution fails or constants are missing.}
 #'     \item{issues}{A list-column of tibbles with issue-level records, or
 #'     `NULL` for failed verifications.}
+#'     \item{reviewed_subjects}{A list-column of tibbles with the subjects
+#'     reviewed by each verification (see Details), or `NULL` for failed
+#'     verifications.}
+#'     \item{cohort_description}{A character column repeating the
+#'     `cohort_description` argument for successfully executed rows, or `NA`
+#'     for failed verifications.}
 #'   }
 #'
 #'   The returned tibble carries attributes
@@ -497,7 +518,8 @@ argos_check_verifications <- function(
   rc_data,
   constants_list = NULL,
   ad_hoc_verifications_path = NULL,
-  data_sets = NULL
+  data_sets = NULL,
+  cohort_description = NA_character_
 ) {
   rc_data_expr <- rlang::enexpr(rc_data)
 
@@ -738,7 +760,8 @@ argos_check_verifications <- function(
     ad_hoc_verifications <- argos_run_ad_hoc_verifications(
       rc_data,
       data_sets,
-      ad_hoc_verifications_path
+      ad_hoc_verifications_path,
+      cohort_description
     )
 
     if (nrow(argos_automatic) > 0) {
@@ -753,7 +776,7 @@ argos_check_verifications <- function(
     argos_final_result <- argos_automatic
   }
 
-  attach_rc_attributes(argos_final_result, rc_data)
+  attach_rc_attributes(argos_final_result, rc_data, cohort_description)
 }
 
 
@@ -777,8 +800,9 @@ argos_check_verifications <- function(
 #'   missing value), `completeness_issue` (a character column with values
 #'   `"Regular missing"` or `"User missing"`), and a first column with the
 #'   subject identifier. If user-missing codes are present, a `missing_value`
-#'   column is also expected. The tibble must carry a `reviewed_forms` character
-#'   attribute listing the REDCap form names that were reviewed.
+#'   column is also expected. The tibble must carry `reviewed_forms`,
+#'   `reviewed_subjects`, and `cohort_description` attributes, as produced by
+#'   [argos_check_completeness()] with `format = "raw"`.
 #' @param verification_text A character scalar, or `NULL`. When provided, it
 #'   replaces the auto-generated verification description
 #'   `"All variables in the form '<form>' are completed following its branching
@@ -802,6 +826,11 @@ argos_check_verifications <- function(
 #'       column, available REDCap context columns (`redcap_event_name`,
 #'       `redcap_form_name`, `redcap_instance_number`), and an `issue` column
 #'       with a human-readable description of the missing field.}
+#'     \item{`reviewed_subjects`}{A list-column repeating the
+#'       `reviewed_subjects` attribute of `completeness_results` (subjects
+#'       reviewed by the completeness check).}
+#'     \item{`cohort_description`}{A character column repeating the
+#'       `cohort_description` attribute of `completeness_results`.}
 #'   }
 #'
 #' @seealso [argos_check_verifications()], [argos_write_verification_report()]
@@ -873,6 +902,12 @@ argos_add_completeness_results <- function(
 
   completeness_nested$reviewed_subjects <- rep(
     list(attr(completeness_results, "reviewed_subjects")),
+    nrow(completeness_nested)
+  )
+
+  cohort_description <- attr(completeness_results, "cohort_description")
+  completeness_nested$cohort_description <- rep(
+    if (is.null(cohort_description)) NA_character_ else cohort_description,
     nrow(completeness_nested)
   )
 
@@ -1007,6 +1042,11 @@ argos_add_to_verifications <- function(
 #'   passed to sourced scripts as `datasets`.
 #' @param script_path A character vector of paths to `.R` scripts implementing
 #'   ad-hoc verifications.
+#' @param cohort_description A character scalar describing the cohort of
+#'   subjects the verifications were applied to (e.g. `"All subjects"`, or
+#'   `"Subjects enrolled before 2024-01-01"`), or `NA_character_` (default).
+#'   Stored as-is in the `cohort_description` column of the result, repeated
+#'   across all successfully executed rows.
 #'
 #' @return A tibble produced by row-binding all collected ad-hoc verification
 #'   objects.
@@ -1020,6 +1060,11 @@ argos_add_to_verifications <- function(
 #'     \item{n_issues}{An integer with the number of issues detected in each
 #'     verification object.}
 #'     \item{issues}{A list-column of tibbles containing issue-level rows.}
+#'     \item{reviewed_subjects}{A list-column of tibbles with the subjects
+#'     reviewed by each verification.}
+#'     \item{cohort_description}{A character column repeating the
+#'     `cohort_description` argument for successfully executed rows, or `NA`
+#'     for failed verifications.}
 #'   }
 #'
 #' @details
@@ -1034,7 +1079,8 @@ argos_add_to_verifications <- function(
 argos_run_ad_hoc_verifications <- function(
   rc_data,
   data_sets = NULL,
-  script_path
+  script_path,
+  cohort_description = NA_character_
 ) {
   # Para evitar usar redcap_data y datasets como nombres de argumento.
   # Además, esto asegura que al ejecutarse los scripts ad-hoc nunca terminen
@@ -1076,7 +1122,7 @@ argos_run_ad_hoc_verifications <- function(
       "issues"
     )
 
-  attach_rc_attributes(result, rc_data)
+  attach_rc_attributes(result, rc_data, cohort_description)
 }
 
 # Internal helper to build the reviewed_subjects report sheet: one row per
@@ -1137,8 +1183,10 @@ build_reviewed_subjects_matrix <- function(results_excel) {
 #'       that verification was applied to.
 #'     \item \code{verifications}: one row per verification with columns
 #'       \code{verif_num}, \code{verif_type} (see Details for possible values),
-#'       \code{verification}, \code{n_subjects} (the number of subjects the
-#'       verification was applied to), and \code{n_issues}.
+#'       \code{verif_source}, \code{verification}, \code{cohort_description}
+#'       (the cohort of subjects the verification was applied to),
+#'       \code{n_subjects} (the number of subjects the verification was
+#'       applied to), and \code{n_issues}.
 #'     \item One additional sheet per verification with at least one detected
 #'       issue, named \code{verif_<verif_num>}.
 #'   }
@@ -1191,9 +1239,24 @@ argos_write_verification_report <- function(argos_results, file_path) {
       verif_type = factor(
         .data$verif_type,
         levels = c("completeness", "plausibility", "update"),
+      ),
+      verif_source = stringr::str_c(
+        .data$verif_origin,
+        " (",
+        .data$verif_fn,
+        ")"
+      ),
+      n_subjects = purrr::map_int(
+        .data$reviewed_subjects,
+        ~ if (is.null(.)) NA_integer_ else nrow(.)
       )
     ) |>
-    dplyr::arrange(.data$verif_type, .data$verif_origin, .data$verif_fn) |>
+    dplyr::arrange(
+      dplyr::desc(.data$n_subjects),
+      .data$verif_type,
+      .data$verif_origin,
+      .data$verif_fn
+    ) |>
     dplyr::mutate(
       verif_num = dplyr::row_number()
     )
@@ -1230,23 +1293,12 @@ argos_write_verification_report <- function(argos_results, file_path) {
     openxlsx2::wb_add_worksheet("verifications") |>
     openxlsx2::wb_add_data_table(
       x = results_excel |>
-        dplyr::mutate(
-          verif_source = stringr::str_c(
-            .data$verif_origin,
-            " (",
-            .data$verif_fn,
-            ")"
-          ),
-          n_subjects = purrr::map_int(
-            .data$reviewed_subjects,
-            ~ if (is.null(.)) NA_integer_ else nrow(.)
-          )
-        ) |>
         dplyr::select(
           "verif_num",
           "verif_type",
           "verif_source",
           "verification",
+          "cohort_description",
           "n_subjects",
           "n_issues"
         ),
@@ -1258,7 +1310,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
     )
   # Add hyperlinks in verif_num column for verifications with issues
   for (v in verif_num_issues) {
-    dims <- paste0("F", v + 1)
+    dims <- paste0("G", v + 1)
     wb <- openxlsx2::wb_add_hyperlink(
       wb,
       sheet = "verifications",

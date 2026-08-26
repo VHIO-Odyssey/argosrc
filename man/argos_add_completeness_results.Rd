@@ -21,8 +21,9 @@ function. Must contain at least the columns `variable` (the field with the
 missing value), `completeness_issue` (a character column with values
 `"Regular missing"` or `"User missing"`), and a first column with the
 subject identifier. If user-missing codes are present, a `missing_value`
-column is also expected. The tibble must carry a `reviewed_forms` character
-attribute listing the REDCap form names that were reviewed.}
+column is also expected. The tibble must carry `reviewed_forms`,
+`reviewed_subjects`, and `cohort_description` attributes, as produced by
+[argos_check_completeness()] with `format = "raw"`.}
 
 \item{verification_text}{A character scalar, or `NULL`. When provided, it
 replaces the auto-generated verification description
@@ -48,6 +49,11 @@ A tibble with the same columns as `previous_results` extended with
       column, available REDCap context columns (`redcap_event_name`,
       `redcap_form_name`, `redcap_instance_number`), and an `issue` column
       with a human-readable description of the missing field.}
+    \item{`reviewed_subjects`}{A list-column repeating the
+      `reviewed_subjects` attribute of `completeness_results` (subjects
+      reviewed by the completeness check).}
+    \item{`cohort_description`}{A character column repeating the
+      `cohort_description` attribute of `completeness_results`.}
   }
 }
 \description{

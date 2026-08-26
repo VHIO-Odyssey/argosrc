@@ -43,7 +43,10 @@ Create an Excel workbook summarising verification results (plausibility and
       that verification was applied to.
     \item \code{verifications}: one row per verification with columns
       \code{verif_num}, \code{verif_type} (see Details for possible values),
-      \code{verification}, and \code{n_issues}.
+      \code{verif_source}, \code{verification}, \code{cohort_description}
+      (the cohort of subjects the verification was applied to),
+      \code{n_subjects} (the number of subjects the verification was
+      applied to), and \code{n_issues}.
     \item One additional sheet per verification with at least one detected
       issue, named \code{verif_<verif_num>}.
   }

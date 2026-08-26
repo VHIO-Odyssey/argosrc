@@ -4,7 +4,12 @@
 \alias{argos_run_ad_hoc_verifications}
 \title{Collect Ad-hoc Verification Results from Scripts}
 \usage{
-argos_run_ad_hoc_verifications(rc_data, data_sets = NULL, script_path)
+argos_run_ad_hoc_verifications(
+  rc_data,
+  data_sets = NULL,
+  script_path,
+  cohort_description = NA_character_
+)
 }
 \arguments{
 \item{rc_data}{A data frame-like object containing REDCap data. It is passed
@@ -15,6 +20,12 @@ passed to sourced scripts as `datasets`.}
 
 \item{script_path}{A character vector of paths to `.R` scripts implementing
 ad-hoc verifications.}
+
+\item{cohort_description}{A character scalar describing the cohort of
+subjects the verifications were applied to (e.g. `"All subjects"`, or
+`"Subjects enrolled before 2024-01-01"`), or `NA_character_` (default).
+Stored as-is in the `cohort_description` column of the result, repeated
+across all successfully executed rows.}
 }
 \value{
 A tibble produced by row-binding all collected ad-hoc verification
@@ -29,6 +40,11 @@ A tibble produced by row-binding all collected ad-hoc verification
     \item{n_issues}{An integer with the number of issues detected in each
     verification object.}
     \item{issues}{A list-column of tibbles containing issue-level rows.}
+    \item{reviewed_subjects}{A list-column of tibbles with the subjects
+    reviewed by each verification.}
+    \item{cohort_description}{A character column repeating the
+    `cohort_description` argument for successfully executed rows, or `NA`
+    for failed verifications.}
   }
 }
 \description{

@@ -8,7 +8,8 @@ argos_check_verifications(
   rc_data,
   constants_list = NULL,
   ad_hoc_verifications_path = NULL,
-  data_sets = NULL
+  data_sets = NULL,
+  cohort_description = NA_character_
 )
 }
 \arguments{
@@ -34,6 +35,12 @@ automatic verification checks.}
 \item{data_sets}{A named list of auxiliary objects, or `NULL`. These objects
 are passed to ad-hoc scripts via [argos_run_ad_hoc_verifications()] as
 `datasets` and are ignored when `ad_hoc_verifications_path` is `NULL`.}
+
+\item{cohort_description}{A character scalar describing the cohort of
+subjects the verifications were applied to (e.g. `"All subjects"`, or
+`"Subjects enrolled before 2024-01-01"`), or `NA_character_` (default).
+Stored as-is in the `cohort_description` column of the result, repeated
+across all successfully executed rows.}
 }
 \value{
 A tibble with one row per automatic verification (and additional rows
@@ -57,6 +64,12 @@ A tibble with one row per automatic verification (and additional rows
     `NA` when execution fails or constants are missing.}
     \item{issues}{A list-column of tibbles with issue-level records, or
     `NULL` for failed verifications.}
+    \item{reviewed_subjects}{A list-column of tibbles with the subjects
+    reviewed by each verification (see Details), or `NULL` for failed
+    verifications.}
+    \item{cohort_description}{A character column repeating the
+    `cohort_description` argument for successfully executed rows, or `NA`
+    for failed verifications.}
   }
 
   The returned tibble carries attributes

@@ -10,10 +10,11 @@ argos_write_verification_report(argos_results, file_path)
 \item{argos_results}{A tibble of verification results, typically the combined
 output of \code{argos_check_verifications()} and
 \code{argos_add_completeness_results()}. It must carry at least the columns
-\code{verif_fn}, \code{verification}, \code{n_issues}, and \code{issues}
-(a list-column of tibbles), and is expected to have the attributes
-\code{redcap_project}, \code{redcap_import_date}, and
-\code{reviewed_subjects}.}
+\code{verif_fn}, \code{verification}, \code{n_issues}, \code{issues}
+(a list-column of tibbles), and \code{reviewed_subjects} (a list-column of
+tibbles of subjects reviewed by each verification, or \code{NULL} when
+\code{execution != "ok"}), and is expected to have the attributes
+\code{redcap_project} and \code{redcap_import_date}.}
 
 \item{file_path}{A character scalar specifying the output file path or file
 stem. If it ends in \code{.xlsx}, the timestamp derived from
@@ -33,8 +34,13 @@ Create an Excel workbook summarising verification results (plausibility and
   \itemize{
     \item \code{project_info}: project metadata from the \code{redcap_project}
       attribute of \code{argos_results}, extended with the import date.
-    \item \code{reviewed_subjects}: subject-level review data from the
-      \code{reviewed_subjects} attribute of \code{argos_results}.
+    \item \code{reviewed_subjects}: one row per subject reviewed by at
+      least one verification (the union of subjects across all
+      verifications), with an identifier column and, when the project uses
+      DAGs, a \code{site} column. One additional column per verification
+      (named \code{verif_<verif_num>}) marks with a checkmark the
+      subjects
+      that verification was applied to.
     \item \code{verifications}: one row per verification with columns
       \code{verif_num}, \code{verif_type} (see Details for possible values),
       \code{verification}, and \code{n_issues}.

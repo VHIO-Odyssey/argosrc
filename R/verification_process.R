@@ -1079,6 +1079,46 @@ argos_run_ad_hoc_verifications <- function(
   attach_rc_attributes(result, rc_data)
 }
 
+# Internal helper to build the reviewed_subjects report sheet: one row per
+# subject reviewed by at least one verification (union across all
+# verifications), with one column per verification marked with a checkmark
+# (named
+# verif_<verif_num>) indicating whether that subject was reviewed by it.
+# Verifications with reviewed_subjects == NULL (failed execution) contribute
+# no subjects and get an all-NA column.
+build_reviewed_subjects_matrix <- function(results_excel) {
+  all_subjects <-
+    results_excel$reviewed_subjects |>
+    purrr::list_rbind() |>
+    dplyr::distinct() |>
+    dplyr::arrange(dplyr::across(tidyselect::any_of(c(
+      "site",
+      "reviewed_subjects"
+    ))))
+
+  verif_cols <-
+    purrr::map(
+      seq_len(nrow(results_excel)),
+      function(i) {
+        col_name <- paste0("verif_", results_excel$verif_num[i])
+        subjects <- results_excel$reviewed_subjects[[i]]
+        if (is.null(subjects)) {
+          mark <- rep(NA_character_, nrow(all_subjects))
+        } else {
+          mark <- ifelse(
+            all_subjects$reviewed_subjects %in% subjects$reviewed_subjects,
+            "\u2713",
+            NA_character_
+          )
+        }
+        tibble::tibble(!!col_name := mark)
+      }
+    ) |>
+    purrr::list_cbind()
+
+  dplyr::bind_cols(all_subjects, verif_cols)
+}
+
 #' @title Write an Excel Verification Report
 #' @description
 #'   Create an Excel workbook summarising verification results (plausibility and
@@ -1088,8 +1128,13 @@ argos_run_ad_hoc_verifications <- function(
 #'   \itemize{
 #'     \item \code{project_info}: project metadata from the \code{redcap_project}
 #'       attribute of \code{argos_results}, extended with the import date.
-#'     \item \code{reviewed_subjects}: subject-level review data from the
-#'       \code{reviewed_subjects} attribute of \code{argos_results}.
+#'     \item \code{reviewed_subjects}: one row per subject reviewed by at
+#'       least one verification (the union of subjects across all
+#'       verifications), with an identifier column and, when the project uses
+#'       DAGs, a \code{site} column. One additional column per verification
+#'       (named \code{verif_<verif_num>}) marks with a checkmark the
+#'       subjects
+#'       that verification was applied to.
 #'     \item \code{verifications}: one row per verification with columns
 #'       \code{verif_num}, \code{verif_type} (see Details for possible values),
 #'       \code{verification}, and \code{n_issues}.
@@ -1100,10 +1145,11 @@ argos_run_ad_hoc_verifications <- function(
 #' @param argos_results A tibble of verification results, typically the combined
 #'   output of \code{argos_check_verifications()} and
 #'   \code{argos_add_completeness_results()}. It must carry at least the columns
-#'   \code{verif_fn}, \code{verification}, \code{n_issues}, and \code{issues}
-#'   (a list-column of tibbles), and is expected to have the attributes
-#'   \code{redcap_project}, \code{redcap_import_date}, and
-#'   \code{reviewed_subjects}.
+#'   \code{verif_fn}, \code{verification}, \code{n_issues}, \code{issues}
+#'   (a list-column of tibbles), and \code{reviewed_subjects} (a list-column of
+#'   tibbles of subjects reviewed by each verification, or \code{NULL} when
+#'   \code{execution != "ok"}), and is expected to have the attributes
+#'   \code{redcap_project} and \code{redcap_import_date}.
 #' @param file_path A character scalar specifying the output file path or file
 #'   stem. If it ends in \code{.xlsx}, the timestamp derived from
 #'   \code{redcap_import_date} is inserted before the extension; otherwise the
@@ -1159,7 +1205,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
     dplyr::mutate(
       import_date = attr(argos_results, "redcap_import_date")
     )
-  reviewed_subjects <- attr(argos_results, "reviewed_subjects")
+  reviewed_subjects <- build_reviewed_subjects_matrix(results_excel)
   wb <-
     openxlsx2::wb_workbook() |>
     openxlsx2::wb_add_worksheet("project_info") |>

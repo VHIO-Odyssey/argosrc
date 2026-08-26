@@ -1137,7 +1137,8 @@ build_reviewed_subjects_matrix <- function(results_excel) {
 #'       that verification was applied to.
 #'     \item \code{verifications}: one row per verification with columns
 #'       \code{verif_num}, \code{verif_type} (see Details for possible values),
-#'       \code{verification}, and \code{n_issues}.
+#'       \code{verification}, \code{n_subjects} (the number of subjects the
+#'       verification was applied to), and \code{n_issues}.
 #'     \item One additional sheet per verification with at least one detected
 #'       issue, named \code{verif_<verif_num>}.
 #'   }
@@ -1235,6 +1236,10 @@ argos_write_verification_report <- function(argos_results, file_path) {
             " (",
             .data$verif_fn,
             ")"
+          ),
+          n_subjects = purrr::map_int(
+            .data$reviewed_subjects,
+            ~ if (is.null(.)) NA_integer_ else nrow(.)
           )
         ) |>
         dplyr::select(
@@ -1242,6 +1247,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
           "verif_type",
           "verif_source",
           "verification",
+          "n_subjects",
           "n_issues"
         ),
       na = ""
@@ -1252,7 +1258,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
     )
   # Add hyperlinks in verif_num column for verifications with issues
   for (v in verif_num_issues) {
-    dims <- paste0("E", v + 1)
+    dims <- paste0("F", v + 1)
     wb <- openxlsx2::wb_add_hyperlink(
       wb,
       sheet = "verifications",

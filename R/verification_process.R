@@ -1360,13 +1360,13 @@ argos_write_verification_report <- function(argos_results, file_path) {
         widths = "auto"
       ) |>
       openxlsx2::wb_add_data(
-        x = "\u2190 Back to verifications",
+        x = "\u2190 Back",
         dims = back_link_dims
       ) |>
       openxlsx2::wb_add_hyperlink(
         dims = back_link_dims,
         target = "verifications_summary!A1",
-        tooltip = "Back to verifications",
+        tooltip = "Go back to verifications summary",
         is_external = FALSE
       ) |>
       openxlsx2::wb_add_font(

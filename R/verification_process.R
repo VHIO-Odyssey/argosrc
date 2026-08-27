@@ -1160,6 +1160,25 @@ build_reviewed_subjects_matrix <- function(results_excel) {
   dplyr::bind_cols(all_subjects, verif_cols)
 }
 
+# Internal helper to add the "top_missing" worksheet to the workbook, if
+# `top_missing` is non-NULL and has at least one row. Kept as a separate
+# helper (rather than inline in the main pipe) so it can be plugged in at the
+# desired position in the sheet order without breaking the pipe.
+add_top_missing_sheet <- function(wb, top_missing) {
+  if (is.null(top_missing) || nrow(top_missing) == 0) {
+    return(wb)
+  }
+  openxlsx2::wb_add_worksheet(wb, "top_missing") |>
+    openxlsx2::wb_add_data_table(
+      x = top_missing,
+      na = ""
+    ) |>
+    openxlsx2::wb_set_col_widths(
+      cols = 1:ncol(top_missing),
+      widths = "auto"
+    )
+}
+
 #' @title Write an Excel Verification Report
 #' @description
 #'   Create an Excel workbook summarising verification results (plausibility and
@@ -1176,6 +1195,10 @@ build_reviewed_subjects_matrix <- function(results_excel) {
 #'       (named \code{verif_<verif_num>}) marks with a checkmark the
 #'       subjects
 #'       that verification was applied to.
+#'     \item \code{top_missing} (optional): present only when
+#'       \code{argos_results} carries a non-empty \code{top_missing}
+#'       attribute (as set by [argos_add_completeness_results()]). Lists the
+#'       most frequently missing variables.
 #'     \item \code{verifications}: one row per verification with columns
 #'       \code{verif_num}, \code{verif_type} (see Details for possible values),
 #'       \code{verif_source}, \code{verification}, \code{cohort_description}
@@ -1265,6 +1288,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
       import_date = attr(argos_results, "redcap_import_date")
     )
   reviewed_subjects <- build_reviewed_subjects_matrix(results_excel)
+  top_missing <- attr(argos_results, "top_missing")
   wb <-
     openxlsx2::wb_workbook() |>
     openxlsx2::wb_add_worksheet("project_info") |>
@@ -1285,6 +1309,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
       cols = 1:ncol(reviewed_subjects),
       widths = "auto"
     ) |>
+    add_top_missing_sheet(top_missing) |>
     openxlsx2::wb_add_worksheet("verifications_summary") |>
     openxlsx2::wb_add_data_table(
       x = results_excel |>
@@ -1367,20 +1392,6 @@ argos_write_verification_report <- function(argos_results, file_path) {
       import_date,
       ".xlsx"
     )
-  }
-
-  top_missing <- attr(argos_results, "top_missing")
-
-  if (!is.null(top_missing) && nrow(top_missing) > 0) {
-    wb <- openxlsx2::wb_add_worksheet(wb, "top_missing") |>
-      openxlsx2::wb_add_data_table(
-        x = top_missing,
-        na = ""
-      ) |>
-      openxlsx2::wb_set_col_widths(
-        cols = 1:ncol(top_missing),
-        widths = "auto"
-      )
   }
 
   cli::cli_alert_info(

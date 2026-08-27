@@ -923,10 +923,22 @@ argos_add_completeness_results <- function(
     "redcap_import_date"
   )
 
-  attr(result, "top_missing") <-
-    completeness_results |>
-    dplyr::count(variable, redcap_form_name) |>
-    dplyr::arrange(dplyr::desc(.data$n))
+  if (is.null(attr(result, "top_missing"))) {
+    attr(result, "top_missing") <-
+      completeness_results |>
+      dplyr::count(.data$variable, .data$redcap_form_name) |>
+      dplyr::arrange(dplyr::desc(.data$n))
+  } else {
+    attr(result, "top_missing") <-
+      dplyr::bind_rows(
+        attr(result, "top_missing"),
+        completeness_results |>
+          dplyr::count(.data$variable, .data$redcap_form_name)
+      ) |>
+      dplyr::group_by(.data$variable, .data$redcap_form_name) |>
+      dplyr::summarise(n = sum(.data$n), .groups = "drop") |>
+      dplyr::arrange(dplyr::desc(.data$n))
+  }
 
   result
 }

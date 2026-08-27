@@ -911,28 +911,23 @@ argos_add_completeness_results <- function(
     nrow(completeness_nested)
   )
 
-  if (nrow(previous_results) == 0) {
-    attr(completeness_nested, "redcap_project") <- attr(
-      previous_results,
-      "redcap_project"
-    )
-    attr(completeness_nested, "redcap_import_date") <- attr(
-      previous_results,
-      "redcap_import_date"
-    )
-
-    return(completeness_nested)
+  result <- if (nrow(previous_results) == 0) {
+    completeness_nested
+  } else {
+    dplyr::bind_rows(previous_results, completeness_nested)
   }
 
-  result <- dplyr::bind_rows(
-    previous_results,
-    completeness_nested
-  )
   attr(result, "redcap_project") <- attr(previous_results, "redcap_project")
   attr(result, "redcap_import_date") <- attr(
     previous_results,
     "redcap_import_date"
   )
+
+  attr(result, "top_missing") <-
+    completeness_results |>
+    dplyr::count(variable, redcap_form_name) |>
+    dplyr::arrange(dplyr::desc(.data$n))
+
   result
 }
 
@@ -1290,7 +1285,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
       cols = 1:ncol(reviewed_subjects),
       widths = "auto"
     ) |>
-    openxlsx2::wb_add_worksheet("verifications") |>
+    openxlsx2::wb_add_worksheet("verifications_summary") |>
     openxlsx2::wb_add_data_table(
       x = results_excel |>
         dplyr::select(
@@ -1313,14 +1308,14 @@ argos_write_verification_report <- function(argos_results, file_path) {
     dims <- paste0("G", v + 1)
     wb <- openxlsx2::wb_add_hyperlink(
       wb,
-      sheet = "verifications",
+      sheet = "verifications_summary",
       dims = dims,
       target = sprintf("verif_%d!A1", v),
       tooltip = sprintf("Go to verif_%d", v),
       is_external = FALSE
     ) |>
       openxlsx2::wb_add_font(
-        sheet = "verifications",
+        sheet = "verifications_summary",
         dims = dims,
         color = openxlsx2::wb_color(hex = "FF0563C1"),
         underline = "single"
@@ -1345,7 +1340,7 @@ argos_write_verification_report <- function(argos_results, file_path) {
       ) |>
       openxlsx2::wb_add_hyperlink(
         dims = back_link_dims,
-        target = "verifications!A1",
+        target = "verifications_summary!A1",
         tooltip = "Back to verifications",
         is_external = FALSE
       ) |>
@@ -1372,6 +1367,20 @@ argos_write_verification_report <- function(argos_results, file_path) {
       import_date,
       ".xlsx"
     )
+  }
+
+  top_missing <- attr(argos_results, "top_missing")
+
+  if (!is.null(top_missing) && nrow(top_missing) > 0) {
+    wb <- openxlsx2::wb_add_worksheet(wb, "top_missing") |>
+      openxlsx2::wb_add_data_table(
+        x = top_missing,
+        na = ""
+      ) |>
+      openxlsx2::wb_set_col_widths(
+        cols = 1:ncol(top_missing),
+        widths = "auto"
+      )
   }
 
   cli::cli_alert_info(

@@ -4,7 +4,7 @@
 \alias{argos_write_verification_report}
 \title{Write an Excel Verification Report}
 \usage{
-argos_write_verification_report(argos_results, file_path)
+argos_write_verification_report(argos_results, file_path, overwrite = FALSE)
 }
 \arguments{
 \item{argos_results}{A tibble of verification results, typically the combined
@@ -20,6 +20,10 @@ tibbles of subjects reviewed by each verification, or \code{NULL} when
 stem. If it ends in \code{.xlsx}, the timestamp derived from
 \code{redcap_import_date} is inserted before the extension; otherwise the
 function appends the timestamp and the \code{.xlsx} extension.}
+
+\item{overwrite}{A logical scalar indicating whether an existing file at
+the resolved output path should be overwritten. Passed through to
+\code{openxlsx2::wb_save()}. Defaults to \code{FALSE}.}
 }
 \value{
 The result returned by \code{openxlsx2::wb_save()} after writing the
@@ -41,20 +45,28 @@ Create an Excel workbook summarising verification results (plausibility and
       (named \code{verif_<verif_num>}) marks with a checkmark the
       subjects
       that verification was applied to.
-    \item \code{verifications}: one row per verification with columns
-      \code{verif_num}, \code{verif_type} (see Details for possible values),
-      \code{verif_source}, \code{verification}, \code{cohort_description}
-      (the cohort of subjects the verification was applied to),
-      \code{n_subjects} (the number of subjects the verification was
-      applied to), and \code{n_issues}.
+    \item \code{top_missing} (optional): present only when
+      \code{argos_results} carries a non-empty \code{top_missing}
+      attribute (as set by [argos_add_completeness_results()]). Lists the
+      most frequently missing variables.
+    \item \code{verifications_summary}: one row per verification with
+      columns \code{verif_num}, \code{verif_type} (see Details for possible
+      values), \code{verif_source}, \code{verification},
+      \code{cohort_description} (the cohort of subjects the verification
+      was applied to), \code{n_subjects} (the number of subjects the
+      verification was applied to), and \code{n_issues}. Rows where
+      \code{n_issues > 0} have a hyperlink from \code{verif_num} to the
+      corresponding issue sheet.
     \item One additional sheet per verification with at least one detected
-      issue, named \code{verif_<verif_num>}.
+      issue, named \code{verif_<verif_num>}, each with a "Back" hyperlink
+      to \code{verifications_summary}.
   }
 }
 \details{
 Only rows where \code{execution == "ok"} are included. Verifications are
-  sorted first by \code{verif_type} (\code{"completeness"} before
-  \code{"plausibility"}, then \code{NA}), then by \code{verif_origin}
+  sorted first by \code{n_subjects} (descending), then by \code{verif_type}
+  (\code{"completeness"} before \code{"plausibility"} before
+  \code{"update"}, then \code{NA}), then by \code{verif_origin}
   (\code{"adhoc"} before \code{"auto"}), and finally alphabetically by
   \code{verif_fn}. Rows are numbered sequentially in a \code{verif_num}
   column. Issue-specific sheets are written only for rows where

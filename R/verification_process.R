@@ -1211,14 +1211,17 @@ add_top_missing_sheet <- function(wb, top_missing) {
 #'       \code{argos_results} carries a non-empty \code{top_missing}
 #'       attribute (as set by [argos_add_completeness_results()]). Lists the
 #'       most frequently missing variables.
-#'     \item \code{verifications}: one row per verification with columns
-#'       \code{verif_num}, \code{verif_type} (see Details for possible values),
-#'       \code{verif_source}, \code{verification}, \code{cohort_description}
-#'       (the cohort of subjects the verification was applied to),
-#'       \code{n_subjects} (the number of subjects the verification was
-#'       applied to), and \code{n_issues}.
+#'     \item \code{verifications_summary}: one row per verification with
+#'       columns \code{verif_num}, \code{verif_type} (see Details for possible
+#'       values), \code{verif_source}, \code{verification},
+#'       \code{cohort_description} (the cohort of subjects the verification
+#'       was applied to), \code{n_subjects} (the number of subjects the
+#'       verification was applied to), and \code{n_issues}. Rows where
+#'       \code{n_issues > 0} have a hyperlink from \code{verif_num} to the
+#'       corresponding issue sheet.
 #'     \item One additional sheet per verification with at least one detected
-#'       issue, named \code{verif_<verif_num>}.
+#'       issue, named \code{verif_<verif_num>}, each with a "Back" hyperlink
+#'       to \code{verifications_summary}.
 #'   }
 #'
 #' @param argos_results A tibble of verification results, typically the combined
@@ -1233,6 +1236,9 @@ add_top_missing_sheet <- function(wb, top_missing) {
 #'   stem. If it ends in \code{.xlsx}, the timestamp derived from
 #'   \code{redcap_import_date} is inserted before the extension; otherwise the
 #'   function appends the timestamp and the \code{.xlsx} extension.
+#' @param overwrite A logical scalar indicating whether an existing file at
+#'   the resolved output path should be overwritten. Passed through to
+#'   \code{openxlsx2::wb_save()}. Defaults to \code{FALSE}.
 #'
 #' @return The result returned by \code{openxlsx2::wb_save()} after writing the
 #'   Excel workbook to \code{here::here(final_file_path)}. As a side effect, an
@@ -1240,8 +1246,9 @@ add_top_missing_sheet <- function(wb, top_missing) {
 #'
 #' @details
 #'   Only rows where \code{execution == "ok"} are included. Verifications are
-#'   sorted first by \code{verif_type} (\code{"completeness"} before
-#'   \code{"plausibility"}, then \code{NA}), then by \code{verif_origin}
+#'   sorted first by \code{n_subjects} (descending), then by \code{verif_type}
+#'   (\code{"completeness"} before \code{"plausibility"} before
+#'   \code{"update"}, then \code{NA}), then by \code{verif_origin}
 #'   (\code{"adhoc"} before \code{"auto"}), and finally alphabetically by
 #'   \code{verif_fn}. Rows are numbered sequentially in a \code{verif_num}
 #'   column. Issue-specific sheets are written only for rows where
@@ -1261,7 +1268,11 @@ add_top_missing_sheet <- function(wb, top_missing) {
 #'
 #' @seealso [argos_check_verifications()], [argos_add_completeness_results()]
 #' @export
-argos_write_verification_report <- function(argos_results, file_path) {
+argos_write_verification_report <- function(
+  argos_results,
+  file_path,
+  overwrite = FALSE
+) {
   results_excel <-
     argos_results |>
     dplyr::filter(.data$execution == "ok") |>
@@ -1409,5 +1420,5 @@ argos_write_verification_report <- function(argos_results, file_path) {
   cli::cli_alert_info(
     "Writing verification report to {.file {here::here(final_file_path)}}"
   )
-  openxlsx2::wb_save(wb, here::here(final_file_path))
+  openxlsx2::wb_save(wb, here::here(final_file_path), overwrite = overwrite)
 }
